@@ -1,105 +1,138 @@
-# Informatica CDGC Demo Kit
+**Informatica CDGC Custom Demo Generator:**
 
-A ready-to-use demo environment for **Informatica Cloud Data Governance & Catalog (CDGC)**, pre-built for financial services customers. Includes all bulk import files, a Claude Code skill for generating new environments, and a Python loader script.
+**File:** `cdgc-setup.md`  
 
----
+**Purpose:** Generate a complete, importable Informatica CDGC demo environment for a customer — 11 Excel files covering every major asset type, ready to bulk-import in order.
 
-## What's included
+### What it produces
 
-| Path | Description |
-|------|-------------|
-| `sample_imports/` | 11 ready-to-import Excel files covering all CDGC asset types |
-| `.claude/commands/cdgc-setup.md` | Claude Code skill — type `/cdgc-setup` to generate a new environment |
-| `cdgc_glossary_loader.py` | Python REST API script for programmatic glossary loading |
+| # | File | Asset Type |
+|---|------|-----------|
+| 01 | `01_Domain.xlsx` | Domain |
+| 02 | `02_Subdomain.xlsx` | Subdomain |
+| 03 | `03_Regulation.xlsx` | Regulation |
+| 04 | `04_Policy.xlsx` | Policy |
+| 05 | `05_Legal_Entity.xlsx` | Legal Entity |
+| 06 | `06_Business_Area.xlsx` | Business Area |
+| 07 | `07_System.xlsx` | System |
+| 08 | `08_Business_Term.xlsx` | Business Term |
+| 09 | `09_Data_Set.xlsx` | Data Set |
+| 10 | `10_DQ_Rule_Template.xlsx` | DQ Rule Template |
+| 11 | `11_Relationships.xlsx` | Cross-asset relationships |
 
----
+### How to invoke
 
-## Sample imports — First Capital Bank (FCB)
-
-Pre-built demo for a fictional financial services customer. Import files in this exact order:
-
-| # | File | Asset Type | Count |
-|---|------|-----------|-------|
-| 01 | `01_Domain.xlsx` | Domain | 4 |
-| 02 | `02_Subdomain.xlsx` | Subdomain | 9 |
-| 03 | `03_Regulation.xlsx` | Regulation | 7 |
-| 04 | `04_Policy.xlsx` | Policy | 5 |
-| 05 | `05_Legal_Entity.xlsx` | Legal Entity | 3 |
-| 06 | `06_Business_Area.xlsx` | Business Area | 8 |
-| 07 | `07_System.xlsx` | System | 4 |
-| 08 | `08_Business_Term_v2.xlsx` | Business Term | 31 |
-| 09 | `09_Data_Set.xlsx` | Data Set | 5 |
-| 10 | `10_DQ_Rule_Template_v3.xlsx` | DQ Rule Template | 10 |
-| 11 | `11_Relationships_Final.xlsx` | Relationships | 25 |
-
-**Import method:** CDGC UI → Gear icon → Import → Upload file → Import one file at a time.
-
-> **Note:** Import Relationships last — all other assets must exist first. After importing Business Terms and Data Sets, export them to get their system Reference IDs (BT-X, DS-X) before building the Relationships file.
-
----
-
-## `/cdgc-setup` Claude Code skill
-
-Generates a complete, customized CDGC demo environment for any customer.
-
-### Setup
-1. Clone this repo
-2. Open Claude Code inside the repo directory:
-   ```bash
-   git clone https://github.com/woppedisano323/Informatica-CDGC-demo-kit.git
-   cd Informatica-CDGC-demo-kit
-   claude
-   ```
-3. Type `/cdgc-setup` to invoke the skill
-
-### What it does
-- Asks for customer name, industry, regulatory concerns, and data domains
-- Generates all 11 import files tailored to that customer
-- Provides step-by-step import instructions and a confirmation checklist
-- Includes financial services defaults (domains, regulations, policies, DQ rules)
-
-### Install globally (optional)
-To use `/cdgc-setup` in any Claude Code session, not just this repo:
-```bash
-cp .claude/commands/cdgc-setup.md ~/.claude/commands/cdgc-setup.md
+```
+/cdgc-setup
 ```
 
+Claude will ask for:
+1. **Customer name** — used to brand descriptions and stakeholder emails
+2. **Industry vertical** — see supported verticals below
+3. **Key regulatory concerns** — or "use defaults" for the vertical
+4. **Primary data domains** — or "use defaults"
+5. **Output directory** — default: `~/Downloads/CDGC_Import_<CustomerName>/`
+
+Providing just a customer name and vertical is enough — all other values default.
+
+### Supported verticals
+
+#### Financial Services
+Banks, credit unions, capital markets, insurance carriers, and fintech.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Customer & KYC, Transactions, General Ledger, Risk & Regulatory) |
+| Subdomains | 9 |
+| Regulations | 7 (BCBS 239, CCAR, FATCA, BSA/AML, SOX, MiFID II, GDPR) |
+| Policies | 5 |
+| Systems | 4 (Core Banking, Risk Mgmt Platform, Regulatory Reporting, Data Warehouse) |
+| Business Terms | 31 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
+#### Healthcare
+Hospitals, health systems, payers, and life sciences.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Patient, Clinical, Claims & Billing, Compliance & Privacy) |
+| Subdomains | 9 |
+| Regulations | 6 (HIPAA, HITECH, CMS CoP, FDA 21 CFR Part 11, HL7 FHIR, ICD-10) |
+| Policies | 5 |
+| Systems | 4 (EHR, Claims Management, Clinical Data Warehouse, Regulatory Reporting) |
+| Business Terms | 28 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
+#### Retail & CPG
+Retailers, consumer goods, e-commerce, and grocery.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Customer, Product, Supply Chain, Transactions) |
+| Subdomains | 9 |
+| Regulations | 5 (GDPR, CCPA, PCI-DSS, California Prop 65, GS1 Standards) |
+| Policies | 5 |
+| Systems | 4 (POS, E-Commerce Platform, ERP/Inventory, Customer Data Platform) |
+| Business Terms | 28 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
+#### Insurance
+Property & casualty, life, health carriers, reinsurance, and brokerage.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Policy & Underwriting, Claims, Customer, Risk & Compliance) |
+| Subdomains | 9 |
+| Regulations | 7 (Solvency II, NAIC Model Laws, IFRS 17, State DOI, GDPR, CCPA, AML) |
+| Policies | 5 |
+| Systems | 4 (Policy Admin, Claims Management, Actuarial Modeling, Regulatory Reporting) |
+| Business Terms | 28 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
+#### Public Sector & Government
+Federal, state, and local agencies, defense, and public utilities.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Citizen Services, Program & Operations, Financial Management, Compliance & Reporting) |
+| Subdomains | 9 |
+| Regulations | 7 (FISMA, FedRAMP, OMB A-123, NIST 800-53, Privacy Act, FOIA, ATO) |
+| Policies | 5 |
+| Systems | 4 (Case Management, Financial Management, Grants Management, Data Analytics Platform) |
+| Business Terms | 28 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
 ---
 
-## Python loader script
+### Import order
 
-`cdgc_glossary_loader.py` loads Business Terms via the IDMC REST API.
+Always import in file number order — CDGC validates parent references at import time.
 
-```bash
-python3 cdgc_glossary_loader.py \
-  --username your_username \
-  --password your_password \
-  --csv path/to/terms.csv \
-  --dry-run
+```
+01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11
 ```
 
-Remove `--dry-run` to execute the actual import.
+**After importing 08 and 09:** export Business Terms and Data Sets from the CDGC UI to get system-assigned `BT-X` / `DS-X` Reference IDs. Verify or update `11_Relationships.xlsx` with those IDs before importing — mismatched IDs fail silently.
+
+**Import method:** CDGC UI → Gear icon → Import → Upload file → Map columns → Import (one file at a time).
 
 ---
 
-## Requirements
+### Sharing this skill
 
-- Python 3.x with `openpyxl` and `requests` installed:
-  ```bash
-  pip install openpyxl requests
-  ```
-- Informatica CDGC org with import permissions
-- Claude Code (for the `/cdgc-setup` skill)
+**With a colleague:** Send them `cdgc-setup.md`. They save it to `~/.claude/commands/cdgc-setup.md` and type `/cdgc-setup` in any Claude Code session.
 
----
+**With a team via git:** Add `cdgc-setup.md` to a shared repo under `.claude/commands/cdgc-setup.md` at the repo root. Anyone who clones the repo and opens Claude Code in that directory gets the skill automatically.
 
-## Common import errors
-
-| Error | Fix |
-|-------|-----|
-| `Enter a valid value from [Create, Update, Delete]` | Operation column missing or wrong position |
-| `The parent is invalid or not present` | Import Domains before Subdomains and Business Terms |
-| `Imported file contains empty values` | Remove header-only sheets from the workbook |
-| Pre-validation failure | Remove Instructions/Annexure sheets |
-| Relationship fails silently | Use Reference IDs (e.g., `BT-23`), not display names |
-| `Parent already exists` on Relationships | Duplicate — not an error, safely ignored |
+**Via plugin marketplace (advanced):** Package with a `plugin.json` manifest and distribute via a private marketplace URL. Team members install with `claude plugin add <marketplace-url>`.
+                                                                               
