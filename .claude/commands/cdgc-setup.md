@@ -1,7 +1,10 @@
 ---
-description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for a financial services customer. Generates all 11 asset type import files in the correct Informatica bulk import format.
----
 
+# DESCRIPTION:
+
+This skill is designed to build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any vertical customer. Generates all 11 asset type import files in the correct Informatica bulk import format. If installed properly this skill will guide you through Q&A and build an associated demo in the vertical you specify.
+
+---
 # CDGC Demo Environment Setup
 
 You are an Informatica CDGC specialist. Your job is to generate a complete, importable demo environment for a financial services customer using the official Informatica bulk import format.
