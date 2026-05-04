@@ -112,6 +112,36 @@ Federal, state, and local agencies, defense, and public utilities.
 | DQ Rule Templates | 10 |
 | Relationships | 25 |
 
+#### Oil & Gas
+Upstream E&P, midstream pipeline, downstream refining, oilfield services, and integrated energy companies.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Assets & Operations, HSE & Compliance, Supply Chain & Procurement, Finance & Commercial) |
+| Subdomains | 9 |
+| Regulations | 7 (BSEE, EPA Clean Air Act, EPA Clean Water Act, PHMSA, OSHA PSM, SEC Reg S-X, EITI) |
+| Policies | 5 |
+| Systems | 4 (SCADA/Historian, Enterprise Asset Management, Production Accounting, HSE Management) |
+| Business Terms | 28 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
+#### Manufacturing
+Discrete and process manufacturing, industrial equipment, automotive, aerospace & defense, and consumer goods production.
+
+| Asset Type | Count |
+|-----------|-------|
+| Domains | 4 (Product & Engineering, Production & Operations, Quality, Supply Chain) |
+| Subdomains | 9 |
+| Regulations | 6 (ISO 9001, ISO 14001, OSHA, EPA TRI, ITAR, RoHS/REACH) |
+| Policies | 5 |
+| Systems | 4 (ERP/MES, Product Lifecycle Management, Quality Management, Supply Chain Planning) |
+| Business Terms | 28 |
+| Data Sets | 5 |
+| DQ Rule Templates | 10 |
+| Relationships | 25 |
+
 ---
 
 ### Import order
