@@ -1,10 +1,7 @@
 ---
-
-# DESCRIPTION:
-
-This skill is designed to build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any vertical customer. Generates all 11 asset type import files in the correct Informatica bulk import format. If installed properly this skill will guide you through Q&A and build an associated demo in the vertical you specify.
-
+description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any industry vertical. Supports Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector, Oil & Gas, and Manufacturing. Generates all 11 asset type import files in the correct Informatica bulk import format.
 ---
+
 # CDGC Demo Environment Setup
 
 You are an Informatica CDGC specialist. Your job is to generate a complete, importable demo environment for a financial services customer using the official Informatica bulk import format.
@@ -34,7 +31,7 @@ You are an Informatica CDGC specialist. Your job is to generate a complete, impo
 Ask the user for:
 
 1. **Customer name** (e.g., First Capital Bank) — used to brand the demo data
-2. **Industry vertical** (Financial Services, Healthcare, Retail, etc.)
+2. **Industry vertical** (Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector, Oil & Gas, Manufacturing)
 3. **Key regulatory concerns** (e.g., BCBS 239, GDPR, HIPAA, SOX, FATCA)
 4. **Primary data domains** (e.g., Customer, Transactions, Risk — or accept defaults)
 5. **Output directory** (default: `~/Downloads/CDGC_Import_<CustomerName>/`)
@@ -476,6 +473,144 @@ FISMA, FedRAMP, OMB Circular A-123, NIST SP 800-53, Privacy Act of 1974, FOIA, A
 - Fiscal Year Format Valid (Validity, High)
 - Compliance Status Populated (Completeness, High)
 - Duplicate Citizen Record Check (Uniqueness, High)
+
+#### Relationships (25)
+- Policy → Business Term `is Regulating`: 8 key linkages
+- Policy → Domain `is Regulating`: 4 (one per domain)
+- System → Data Set `is a Strategic Source for`: 5
+- Data Set → Business Term `is Defined by`: 8
+
+---
+
+### Oil & Gas
+
+Use for upstream exploration & production, midstream pipeline, downstream refining, oilfield services, and integrated energy companies.
+
+#### Domains (4)
+- `Assets & Operations` — wells, facilities, equipment, production data
+- `HSE & Compliance` — health, safety, environment, regulatory permits
+- `Supply Chain & Procurement` — vendors, materials, logistics, contracts
+- `Finance & Commercial` — production accounting, trading, revenue, joint ventures
+
+#### Subdomains (9)
+- Assets & Operations: Well Management, Facility & Equipment, Production Reporting
+- HSE & Compliance: Incident Management, Environmental Permits, Regulatory Reporting
+- Supply Chain & Procurement: Vendor Management, Materials & Inventory
+- Finance & Commercial: Production Accounting, Joint Venture Accounting
+
+#### Regulations (7)
+BSEE (Bureau of Safety and Environmental Enforcement), EPA Clean Air Act, EPA Clean Water Act, PHMSA Pipeline Safety Regulations, OSHA Process Safety Management (PSM), SEC Regulation S-X (oil & gas disclosures), EITI (Extractive Industries Transparency Initiative)
+
+#### Policies (5)
+- Asset Data Quality Standards (Data Standards)
+- HSE Incident Reporting Policy (Business Rule)
+- Environmental Compliance Data Policy (Conduct Standards)
+- Production Accounting Standards (Technical Standards)
+- Vendor & Contract Data Policy (Business Rule)
+
+#### Systems (4)
+- SCADA / Historian (Operational)
+- Enterprise Asset Management System (Operational)
+- Production Accounting System (Analytical)
+- HSE Management System (Reporting)
+
+#### Data Sets (5)
+- Well Master (Assets & Operations)
+- Production Volume Register (Assets & Operations)
+- HSE Incident Log (HSE & Compliance)
+- Vendor & Contract Register (Supply Chain & Procurement)
+- Joint Venture Ledger (Finance & Commercial)
+
+#### Business Terms — 28 across all 4 domains
+
+**Assets & Operations:** Well ID, API Well Number, Field Name, Production Zone, Daily Oil Production (BOE), Water Cut Percentage, Wellhead Pressure, Run Ticket Number
+
+**HSE & Compliance:** Incident ID, Incident Severity, Lost Time Injury (LTI), Process Safety Event, Environmental Release Volume, Permit Number, Spill Indicator
+
+**Supply Chain & Procurement:** Vendor ID, Purchase Order Number, Material Number, Lead Time (Days), Contract Value, Approved Vendor Indicator, Inventory On-Hand
+
+**Finance & Commercial:** AFE Number, Joint Venture ID, Working Interest Percentage, Royalty Rate, Revenue Deduction Code, Production Month, Net Revenue Interest
+
+#### DQ Rule Templates (10)
+- API Well Number Format (Validity, High)
+- Daily Production Not Negative (Validity, High)
+- Run Ticket Not Null (Completeness, High)
+- Incident Severity Populated (Completeness, High)
+- Permit Number Not Null (Completeness, High)
+- Environmental Release Volume Not Negative (Validity, High)
+- Working Interest Percentage Range 0–100 (Validity, High)
+- Royalty Rate Range 0–100 (Validity, High)
+- AFE Number Not Null (Completeness, High)
+- Duplicate Well Record Check (Uniqueness, High)
+
+#### Relationships (25)
+- Policy → Business Term `is Regulating`: 8 key linkages
+- Policy → Domain `is Regulating`: 4 (one per domain)
+- System → Data Set `is a Strategic Source for`: 5
+- Data Set → Business Term `is Defined by`: 8
+
+---
+
+### Manufacturing
+
+Use for discrete manufacturing, process manufacturing, industrial equipment, automotive, aerospace & defense, and consumer goods production customers.
+
+#### Domains (4)
+- `Product & Engineering` — product definitions, BOMs, specifications, engineering change orders
+- `Production & Operations` — work orders, production runs, shop floor, OEE
+- `Quality` — quality control, non-conformance, inspections, certifications
+- `Supply Chain` — suppliers, raw materials, inventory, logistics, demand planning
+
+#### Subdomains (9)
+- Product & Engineering: Product Master, Bill of Materials, Engineering Change Management
+- Production & Operations: Work Order Management, Shop Floor Operations
+- Quality: Quality Control, Non-Conformance Management, Supplier Quality
+- Supply Chain: Supplier Management, Inventory & Warehousing, Demand & Supply Planning
+
+#### Regulations (6)
+ISO 9001 (Quality Management), ISO 14001 (Environmental Management), OSHA General Industry Standards, EPA Toxic Release Inventory (TRI), ITAR (International Traffic in Arms Regulations), RoHS / REACH (hazardous substance restrictions)
+
+#### Policies (5)
+- Product Data Quality Standards (Data Standards)
+- Quality Management Policy (Business Rule)
+- Non-Conformance Reporting Policy (Business Rule)
+- Environmental & Compliance Data Policy (Conduct Standards)
+- Supplier Data Standards (Technical Standards)
+
+#### Systems (4)
+- ERP / Manufacturing Execution System (Operational)
+- Product Lifecycle Management System (Operational)
+- Quality Management System (Reporting)
+- Supply Chain Planning Platform (Analytical)
+
+#### Data Sets (5)
+- Product Master (Product & Engineering)
+- Bill of Materials (Product & Engineering)
+- Work Order Register (Production & Operations)
+- Non-Conformance Register (Quality)
+- Supplier & Material Master (Supply Chain)
+
+#### Business Terms — 28 across all 4 domains
+
+**Product & Engineering:** Part Number, Part Description, Revision Level, Unit of Measure, Bill of Materials (BOM), Engineering Change Order (ECO) Number, Product Classification Code
+
+**Production & Operations:** Work Order Number, Routing Step, Machine ID, Planned Cycle Time, Actual Cycle Time, Overall Equipment Effectiveness (OEE), Shift Code
+
+**Quality:** Inspection Lot Number, Non-Conformance Report (NCR) Number, Defect Code, Defect Quantity, Corrective Action Status, First Pass Yield, Certificate of Conformance Number
+
+**Supply Chain:** Supplier ID, Raw Material Number, Reorder Point, Safety Stock Level, Purchase Order Number, Goods Receipt Number, Lead Time (Days)
+
+#### DQ Rule Templates (10)
+- Part Number Not Null (Completeness, High)
+- BOM Revision Level Populated (Completeness, High)
+- Work Order Routing Complete (Completeness, High)
+- Actual Cycle Time Not Negative (Validity, High)
+- OEE Range 0–100 (Validity, High)
+- NCR Defect Code Populated (Completeness, High)
+- First Pass Yield Range 0–100 (Validity, High)
+- Supplier ID Not Null (Completeness, High)
+- Safety Stock Not Negative (Validity, High)
+- Duplicate Part Number Check (Uniqueness, High)
 
 #### Relationships (25)
 - Policy → Business Term `is Regulating`: 8 key linkages
