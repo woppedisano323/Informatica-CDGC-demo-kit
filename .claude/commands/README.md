@@ -1,6 +1,6 @@
 # Informatica CDGC Demo Kit
 
-A ready-to-use demo environment for **Informatica Cloud Data Governance & Catalog (CDGC)**, pre-built for financial services customers. Includes all bulk import files, a Claude Code skill for generating new environments, and a Python loader script.
+A ready-to-use demo environment for **Informatica Cloud Data Governance & Catalog (CDGC)**, supporting 7 industry verticals. Includes all bulk import files, a Claude Code skill for generating new environments, and a Python loader script.
 
 ---
 
@@ -56,7 +56,7 @@ Generates a complete, customized CDGC demo environment for any customer.
 - Asks for customer name, industry, regulatory concerns, and data domains
 - Generates all 11 import files tailored to that customer
 - Provides step-by-step import instructions and a confirmation checklist
-- Includes pre-built defaults for 5 industry verticals:
+- Includes pre-built defaults for 7 industry verticals:
 
 | Vertical | Regulations | Key Focus |
 |----------|------------|-----------|
@@ -65,6 +65,8 @@ Generates a complete, customized CDGC demo environment for any customer.
 | **Retail & CPG** | GDPR, CCPA, PCI-DSS | Customer, Product, Supply Chain |
 | **Insurance** | Solvency II, NAIC, IFRS 17, AML | Policy, Claims, Actuarial |
 | **Public Sector** | FISMA, FedRAMP, Privacy Act, FOIA | Citizen, Grants, Federal Finance |
+| **Oil & Gas** | BSEE, EPA, PHMSA, OSHA PSM | Wells, HSE, Production Accounting |
+| **Manufacturing** | ISO 9001, ISO 14001, ITAR, RoHS | BOM, Work Orders, Quality, OEE |
 
 ### Install globally (optional)
 To use `/cdgc-setup` in any Claude Code session, not just this repo:
