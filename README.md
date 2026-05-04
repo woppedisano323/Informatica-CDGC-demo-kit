@@ -4,6 +4,33 @@
 
 **Purpose:** Generate a complete, importable Informatica CDGC demo environment for a customer — 11 Excel files covering every major asset type, ready to bulk-import in order.
 
+---
+
+### Important: CDGC and Data Marketplace setup order
+
+> **Set up CDGC before Data Marketplace** to get full value from both tools. CDGC provides the governance foundation — domains, business terms, policies, and data quality rules — that Data Marketplace surfaces to data consumers. Without CDGC in place, Data Marketplace collections will lack linked glossary terms, certified definitions, and DQ scores.
+
+**Recommended order:**
+1. Import CDGC assets using `/cdgc-setup` (this skill)
+2. Import Data Marketplace assets using `/marketplace-setup`
+3. In CDGC, link Data Sets to Data Collections via the Relationships import
+4. In Marketplace, verify that Data Collections surface linked CDGC Business Terms
+
+---
+
+### Important: User-dependent fields
+
+Some import files contain fields that must reference a valid user account in the IDMC org. If these are not updated to match a real user before import, the record will fail or import with an unresolved reference.
+
+| File | Field | Note |
+|------|-------|-------|
+| `14_Consumer_Access.xlsx` | `Data User` | Must be the email address of an existing Data Marketplace user in the org. The generated files use `woppedisano@informatica.com` as a placeholder — **update this to a valid user email before importing** or the record will fail to resolve. |
+| `09_Data_Collection.xlsx` | `Data Owners`, `Technical Owners` | Should be valid org user emails. Generated files use role-based placeholder emails (e.g., `data.engineering@customer.com`) — update if your org enforces user resolution on import. |
+
+**Best practice:** Before importing files 09 and 14, confirm the target user emails exist in your IDMC org under **Administrator → Users**.
+
+---
+
 ### What it produces
 
 | # | File | Asset Type |
