@@ -1,15 +1,19 @@
 """
 CDGC Business Glossary Loader
 Reads glossary terms from CSV and loads them into Informatica CDGC via REST API.
-Org URL: https://usw1.dmp-us.informaticacloud.com
 
 Usage:
-    python3 cdgc_glossary_loader.py --username your@email.com --password yourpassword
+    python3 cdgc_glossary_loader.py \
+        --username your@email.com \
+        --password yourpassword \
+        --org-url https://<your-org>.informaticacloud.com
 
 Optional flags:
     --csv       Path to glossary CSV (default: CDGC_Glossary_Import.csv)
     --dry-run   Print payloads without calling the API
     --category  Only load terms for a specific category
+
+Note: Find your org URL in IDMC → Administrator → Organization → Pod URL.
 """
 
 import argparse
@@ -22,7 +26,6 @@ from pathlib import Path
 # ── Config ────────────────────────────────────────────────────────────────────
 
 LOGIN_URL   = "https://dm-us.informaticacloud.com/ma/api/v2/user/login"
-ORG_URL     = "https://usw1.dmp-us.informaticacloud.com"
 
 # CDGC REST API paths — verify these against your org's API explorer if needed
 # Navigator: IDMC → Administrator → API Documentation (if enabled)
@@ -34,7 +37,6 @@ DEFAULT_CSV   = Path(__file__).parent / "CDGC_Glossary_Import.csv"
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def login(username: str, password: str) -> dict:
-    """Authenticate to IDMC and return session info."""
     payload = {
         "@type": "login",
         "username": username,
@@ -49,7 +51,7 @@ def login(username: str, password: str) -> dict:
         print(json.dumps(data, indent=2))
         sys.exit(1)
     print(f"✓ Authenticated as {username}")
-    return {"sessionId": session_id, "serverUrl": ORG_URL}
+    return {"sessionId": session_id}
 
 
 def headers(session_id: str) -> dict:
@@ -60,9 +62,8 @@ def headers(session_id: str) -> dict:
 
 # ── Category management ───────────────────────────────────────────────────────
 
-def get_existing_categories(session_id: str) -> dict:
-    """Return dict of {category_name: category_id} for all existing categories."""
-    url = ORG_URL + CATEGORY_PATH
+def get_existing_categories(org_url: str, session_id: str) -> dict:
+    url = org_url + CATEGORY_PATH
     resp = requests.get(url, headers=headers(session_id), timeout=30)
     if resp.status_code == 404:
         print("WARN: Category endpoint not found — check CATEGORY_PATH in config.")
@@ -74,13 +75,12 @@ def get_existing_categories(session_id: str) -> dict:
     return cats
 
 
-def create_category(session_id: str, name: str, dry_run: bool) -> str:
-    """Create a glossary category and return its ID."""
+def create_category(org_url: str, session_id: str, name: str, dry_run: bool) -> str:
     payload = {"name": name, "description": f"Business glossary category for {name}"}
     if dry_run:
         print(f"  [DRY RUN] POST {CATEGORY_PATH} → {json.dumps(payload)}")
         return f"dry-run-id-{name.replace(' ', '-').lower()}"
-    url = ORG_URL + CATEGORY_PATH
+    url = org_url + CATEGORY_PATH
     resp = requests.post(url, headers=headers(session_id), json=payload, timeout=30)
     if resp.status_code in (200, 201):
         cat_id = resp.json().get("id", "")
@@ -92,7 +92,6 @@ def create_category(session_id: str, name: str, dry_run: bool) -> str:
 # ── Term management ───────────────────────────────────────────────────────────
 
 def build_term_payload(row: dict, category_id: str) -> dict:
-    """Build the API payload for a business term from a CSV row."""
     payload = {
         "name": row["Name"].strip(),
         "description": row["Description"].strip(),
@@ -108,12 +107,11 @@ def build_term_payload(row: dict, category_id: str) -> dict:
     return payload
 
 
-def create_term(session_id: str, payload: dict, dry_run: bool) -> bool:
-    """POST a business term to CDGC."""
+def create_term(org_url: str, session_id: str, payload: dict, dry_run: bool) -> bool:
     if dry_run:
         print(f"  [DRY RUN] POST {TERM_PATH} → name='{payload['name']}'")
         return True
-    url = ORG_URL + TERM_PATH
+    url = org_url + TERM_PATH
     resp = requests.post(url, headers=headers(session_id), json=payload, timeout=30)
     if resp.status_code in (200, 201):
         print(f"  ✓ Created term: {payload['name']}")
@@ -128,12 +126,15 @@ def create_term(session_id: str, payload: dict, dry_run: bool) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Load CDGC glossary from CSV")
-    parser.add_argument("--username", required=True, help="IDMC username (email)")
-    parser.add_argument("--password", required=True, help="IDMC password")
-    parser.add_argument("--csv", default=str(DEFAULT_CSV), help="Path to glossary CSV")
-    parser.add_argument("--dry-run", action="store_true", help="Print payloads without calling API")
-    parser.add_argument("--category", help="Only load terms for this category")
+    parser.add_argument("--username",  required=True, help="IDMC username (email)")
+    parser.add_argument("--password",  required=True, help="IDMC password")
+    parser.add_argument("--org-url",   required=True, help="Your IDMC org base URL (e.g. https://usw1.dmp-us.informaticacloud.com)")
+    parser.add_argument("--csv",       default=str(DEFAULT_CSV), help="Path to glossary CSV")
+    parser.add_argument("--dry-run",   action="store_true", help="Print payloads without calling API")
+    parser.add_argument("--category",  help="Only load terms for this category")
     args = parser.parse_args()
+
+    org_url = args.org_url.rstrip("/")
 
     # Read CSV
     csv_path = Path(args.csv)
@@ -159,7 +160,7 @@ def main():
         session_id = session["sessionId"]
 
     # Get existing categories
-    existing_categories = {} if args.dry_run else get_existing_categories(session_id)
+    existing_categories = {} if args.dry_run else get_existing_categories(org_url, session_id)
 
     # Group rows by category
     categories = {}
@@ -173,10 +174,9 @@ def main():
     for cat_name, terms in categories.items():
         print(f"\n── Category: {cat_name} ({len(terms)} terms) ──")
 
-        # Get or create category
         cat_id = existing_categories.get(cat_name, "")
         if not cat_id:
-            cat_id = create_category(session_id, cat_name, args.dry_run)
+            cat_id = create_category(org_url, session_id, cat_name, args.dry_run)
         else:
             print(f"  ~ Category exists (id: {cat_id})")
 
@@ -185,16 +185,14 @@ def main():
             results["failed"] += len(terms)
             continue
 
-        # Create each term
         for row in terms:
             payload = build_term_payload(row, cat_id)
-            success = create_term(session_id, payload, args.dry_run)
+            success = create_term(org_url, session_id, payload, args.dry_run)
             if success:
                 results["created"] += 1
             else:
                 results["failed"] += 1
 
-    # Summary
     print(f"\n{'='*50}")
     print(f"Complete — Created: {results['created']} | Failed: {results['failed']}")
     print(f"{'='*50}")
