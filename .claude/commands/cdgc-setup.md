@@ -1,5 +1,5 @@
 ---
-description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any industry vertical. Supports Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector, Oil & Gas, and Manufacturing. Generates all 11 asset type import files in the correct Informatica bulk import format.
+description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any industry vertical. Supports Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector, Oil & Gas, and Manufacturing. Generates all 11 asset type import files. Choose manual UI upload or fully automated API import with job polling.
 ---
 
 # CDGC Demo Environment Setup
@@ -8,7 +8,7 @@ You are an Informatica CDGC specialist. Your job is to generate a complete, impo
 
 ## What this skill produces
 
-11 Excel files, imported in order, covering every major asset type in CDGC:
+14 Excel files, imported in order, covering every major asset type in CDGC:
 
 | # | File | Asset Type | Notes |
 |---|------|-----------|-------|
@@ -18,11 +18,55 @@ You are an Informatica CDGC specialist. Your job is to generate a complete, impo
 | 04 | `04_Policy.xlsx` | Policy | Data governance policies |
 | 05 | `05_Legal_Entity.xlsx` | Legal Entity | Corporate legal entities |
 | 06 | `06_Business_Area.xlsx` | Business Area | Organizational units |
-| 07 | `07_System.xlsx` | System | Source/target systems |
-| 08 | `08_Business_Term.xlsx` | Business Term | Glossary terms |
-| 09 | `09_Data_Set.xlsx` | Data Set | Logical data sets |
-| 10 | `10_DQ_Rule_Template.xlsx` | Data Quality Rule Template | DQ rule definitions |
-| 11 | `11_Relationships.xlsx` | Relationships | Cross-asset linkages |
+| 07 | `07_Geography.xlsx` | Geography | Geographic regions and jurisdictions |
+| 08 | `08_System.xlsx` | System | Source/target systems |
+| 09 | `09_AI_System.xlsx` | AI System | AI applications and agents |
+| 10 | `10_AI_Model.xlsx` | AI Model | Machine learning models |
+| 11 | `11_Business_Term.xlsx` | Business Term | Glossary terms |
+| 12 | `12_Data_Set.xlsx` | Data Set | Logical data sets |
+| 13 | `13_DQ_Rule_Template.xlsx` | Data Quality Rule Template | DQ rule definitions |
+| 14 | `14_Relationships.xlsx` | Relationships | Cross-asset linkages |
+
+---
+
+## Step 0 — Choose import method
+
+Before gathering any other details, ask the user which import method they want to use:
+
+```
+How would you like to import the files into CDGC once they are generated?
+
+  A) Manual UI (default)
+     Upload each file yourself via the CDGC UI.
+     Works in all environments. No credentials needed now.
+
+  B) API (automated)
+     I will import all 11 files programmatically and poll until complete.
+     Requires your IDMC org URL, username, and password.
+     Note: This requires the Import privilege in your org and a reachable pod URL.
+     Not available for SAML-only orgs without API access enabled.
+
+If you are unsure, choose A — you can always import manually using the files I generate.
+```
+
+Store the choice as `IMPORT_METHOD` (A or B). If B, also collect:
+- `ORG_URL` — the base API URL for the user's pod (e.g., `https://idmc-api.dmp-us.informaticacloud.com`)
+- `LOGIN_URL` — the IDMC login URL for the user's region (e.g., `https://dmp-us.informaticacloud.com`)
+- `USERNAME` — IDMC username (email)
+- `PASSWORD` — IDMC password
+
+Inform the user: credentials are used only for this session to generate the JWT token and are not stored anywhere.
+
+### Known reasons API import may not work
+
+| Reason | Recommendation |
+|--------|---------------|
+| No Import privilege in Administrator | Ask org admin to grant Import privilege, or use Option A |
+| SAML-only org with no local user accounts | API auth requires a local IDMC account — use Option A |
+| Pod URL unknown | Find it in IDMC → Administrator → Organization → Pod URL |
+| Firewall or network restrictions blocking outbound HTTPS | Use Option A |
+| API rate limit hit (120 calls/min, 10,000/day) | The 11-file import uses ~11–22 calls — well within limits under normal use |
+| JWT token expired mid-import (30 min TTL) | Script handles this by re-authenticating if a 401 is returned |
 
 ---
 
@@ -53,8 +97,10 @@ Use Python + openpyxl to generate all 11 files. Follow every rule below exactly 
 - Boolean fields (`Critical Data Element`, `Enable Automation`) must be lowercase: `true` / `false`
 - Remove all empty sheets before saving — CDGC rejects files with header-only sheets
 - Do NOT include an Instructions or Annexure sheet
-- Reference IDs are optional on create but useful for relationships — use format `DOM-1`, `BT-1`, `POL-1`, etc.
-- Parent references use format `Display Name | Reference ID` (e.g., `Customer & KYC | DOM-5`)
+- Reference IDs are required for relationships — always use a **customer-specific prefix** based on the customer name (e.g., `RKFDOM-1`, `RKFBT-1`, `RKFPOL-1`). Do NOT use CDGC's auto-generated prefixes (`DOM-`, `BT-`, `POL-`): they collide with system-generated IDs and are rejected on create.
+- Parent references use format `Display Name | Reference ID` (e.g., `Customer & KYC | RKFDOM-5`)
+- **Single parent rule:** CDGC enforces exactly one parent per asset. Populate only one parent column per row — leave all other parent columns blank. Violating this fails every row in the file with "There are multiple parents with this asset."
+- **Stakeholder columns** (`Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`) must contain a real email address of a user in the org. Blank or placeholder values block UI import entirely with no clear error message.
 
 ---
 
@@ -62,12 +108,15 @@ Use Python + openpyxl to generate all 11 files. Follow every rule below exactly 
 
 #### Domain
 Sheet name: `Domain`
-Columns (in order): `Reference ID`, `Name`, `Description`, `Lifecycle`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`, `Critical Data Element`
+Columns (in order): `Reference ID`, `Name`, `Description`, `Alias Names`, `Lifecycle`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+- No `Critical Data Element` column on Domain
 
 #### Subdomain
 Sheet name: `Subdomain`
-Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Parent: Domain`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
-- `Parent: Domain` format: `Domain Name | DOM-X`
+Columns: `Reference ID`, `Name`, `Description`, `Alias Names`, `Business Logic`, `Examples`, `Lifecycle`, `Security Level`, `Operation`, `Parent: Subdomain`, `Parent: Domain`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+- `Parent: Domain` format: `Domain Name | <PREFIX>DOM-X` (e.g., `Customer & KYC | RKFDOM-1`)
+- `Parent: Subdomain`: populate only for nested subdomains — leave blank for top-level
+- Single parent rule applies: populate either `Parent: Domain` or `Parent: Subdomain`, never both
 
 #### Regulation
 Sheet name: `Regulation`
@@ -87,24 +136,46 @@ Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Operation`
 Sheet name: `Business Area`
 Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
 
+#### Geography
+Sheet name: `Geography`
+Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Operation`
+
 #### System
 Sheet name: `System`
-Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `System Type`, `System Purpose`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+Columns: `Reference ID`, `Name`, `Description`, `Asset ID`, `Lifecycle`, `Long Name`, `System Purpose`, `System Type`, `Operation`, `Parent: System`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
 - `System Type` valid value: `Software Application`
-- `System Purpose` valid values: `Operational`, `Analytical`, `Reporting`, `Integration`, `Master Data Management`
+- `Asset ID`: use same value as Reference ID
+- `Long Name`: full descriptive system name
+- `System Purpose` valid values (confirmed on suborg): `Core Client & Transaction Processing`, `Master Data Management`, `Data Quality`, `Warehouse & DataMart`, `Reporting Layer`, `Finance Function`, `Management Reporting`, `Risk Function`, `Regulatory Reporting`, `Sales Reporting`
+- Do NOT use `Operational`, `Analytical`, or `Reporting` — these are rejected on suborg accounts
+
+#### AI System
+Sheet name: `AI System`
+Columns: `Reference ID`, `Name`, `Description`, `AI System Type`, `Development Stage`, `Lifecycle`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+- `AI System Type` valid values: `AI Application`, `AI Agent`, `Retrieval System`, `Conversational`
+- `Development Stage` valid values: `In Development`, `Validation`, `Production`
+
+#### AI Model
+Sheet name: `AI Model`
+Columns: `Reference ID`, `Name`, `Description`, `AI Model Purpose`, `Architecture Type`, `Bias`, `Drift`, `Environment`, `Input`, `Libraries`, `Lifecycle`, `Model Format`, `Model Rules`, `Output`, `Source Model Repository`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+- `Architecture Type` valid values: `Decision Trees`, `Logistic Regression`, `Linear Regression`, `Others`
+- `Bias` / `Drift`: numeric values only (0–100) — text strings are rejected
+- `Model Format` valid values: `Docker`, `ONNX`, `Other`
 
 #### Business Term
 Sheet name: `Business Term`
-Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Parent: Domain`, `Parent: Business Term`, `Abbreviation`, `Acronym`, `Example`, `Note`, `Critical Data Element`, `Synonym`, `Related Terms`, `Has Policy`, `Has Regulation`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`, `Primary Contact`, `Secondary Contact`
-- `Parent: Domain` format: `Domain Name | DOM-X`
+Columns: `Reference ID`, `Name`, `Description`, `Alias Names`, `Business Logic`, `Critical Data Element`, `Examples`, `Format Type`, `Format Description`, `Lifecycle`, `Security Level`, `Classifications`, `Reference Data`, `Operation`, `Parent: Subdomain`, `Parent: Business Term`, `Parent: Metric`, `Parent: Domain`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+- **Single parent rule:** populate `Parent: Subdomain` only — leave `Parent: Domain` blank. Domain association is inherited through the Subdomain.
+- `Parent: Subdomain` format: `Subdomain Name | <PREFIX>SD-X` (e.g., `Customer Identity | RKFSD-1`)
 - `Critical Data Element`: `true` or `false`
-- Do NOT populate `Parent: Business Term` — leave blank (causes import failure)
-- `Has Policy` / `Has Regulation`: leave blank on initial import (link via Relationships)
+- `Parent: Business Term`, `Parent: Metric`, `Parent: Domain`: leave blank
 
 #### Data Set
 Sheet name: `Data Set`
-Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Parent: Domain`, `Operation`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
-- `Parent: Domain` format: `Domain Name | DOM-X`
+Columns: `Reference ID`, `Name`, `Description`, `Lifecycle`, `Operation`, `Parent: AI System`, `Parent: System`, `Stakeholder: Governance Owner`, `Stakeholder: Governance Administrator`
+- **Single parent rule:** populate `Parent: System` OR `Parent: AI System` — never both on the same row
+- `Parent: System` format: `System Name | <PREFIX>SYS-X` (e.g., `Core Banking System | RKFSYS-1`)
+- Populating `Parent: System` automatically creates the `System → Data Set (is a Strategic Source for)` relationship — do NOT include this relationship in the Relationships file or it will cause "Parent already exists" errors
 
 #### Data Quality Rule Template
 Sheet name: `Data Quality Rule Template`
@@ -112,22 +183,21 @@ Columns: `Reference ID`, `Name`, `Description`, `Criticality`, `Dimension`, `Ena
 - `Criticality` valid values: `High`, `Medium`, `Low`
 - `Dimension` valid values: `Accuracy`, `Validity`, `Completeness`, `Consistency`, `Uniqueness`, `Timeliness`
 - `Enable Automation`: `true` or `false`
-- `Measuring Method` valid values: `BusinessExtract`, `SystemFunction`, `TechnicalScript`, `InformaticaCloudDataQuality`
+- `Measuring Method`: use `TechnicalScript` for demo environments — allows SQL/expression in `Technical Description`. Do NOT use `InformaticaCloudDataQuality` — it requires a `Technical Rule Reference` (a live CDQE rule ID from the org) and will fail without one.
 - `Target` / `Threshold`: numeric values only (e.g., `100`, `0`) — no percent sign
-- `Primary Glossary` / `Secondary Glossary`: `Term Name | BT-X` format — **leave blank on first import**, update in a second pass once Business Terms are created and you have their Reference IDs
+- `Primary Glossary`: **name only** (e.g., `Social Security Number`) — do NOT use `Name | RefID` format (rejected). This links the DQ Rule to the Business Term; the relationship appears on both sides in the CDGC UI. DQ Rule Templates must be imported after Business Terms — glossary links are validated on import.
 
 #### Relationships
 Sheet name: `Relationships`
 Columns: `Source Asset`, `Source Asset Type`, `Target Asset`, `Target Asset Type`, `Relationship Type`, `Operation`
-- All asset references must use Reference IDs (e.g., `POL-1`, `BT-23`) — display names will fail silently
-- Valid relationship types (from Annexure):
+- All asset references must use Reference IDs (e.g., `RKFPOL-1`, `RKFBT-23`) — display names will fail silently
+- Valid relationship types:
   - Policy → Business Term: `is Regulating`
   - Policy → Domain: `is Regulating`
-  - System → Data Set: `is a Strategic Source for`
   - Data Set → Business Term: `is Defined by`
-  - Business Term → Business Term: `is Related to`, `is Described by`, `is Classified by`
-  - Domain → Subdomain: `is the Parent of`
-- **Import relationships last** — all referenced assets must exist first
+  - Business Term → Business Term: `is Related to`
+- **Do NOT include** `System → Data Set (is a Strategic Source for)` — this is auto-created by `Parent: System` in the Data Set import. Including it here will cause "Parent already exists" errors that abort the entire batch.
+- **Import last** — all referenced assets must exist first
 
 ---
 
@@ -620,31 +690,168 @@ ISO 9001 (Quality Management), ISO 14001 (Environmental Management), OSHA Genera
 
 ---
 
-## Step 4 — Import order and instructions
+## Step 4 — Import
+
+Branch on `IMPORT_METHOD` chosen in Step 0.
+
+---
+
+### Option A — Manual UI import
 
 Tell the user to import files in this exact order:
 
 ```
-01_Domain.xlsx          ← no dependencies
-02_Subdomain.xlsx       ← depends on Domains
-03_Regulation.xlsx      ← no dependencies
-04_Policy.xlsx          ← no dependencies
-05_Legal_Entity.xlsx    ← no dependencies
-06_Business_Area.xlsx   ← no dependencies
-07_System.xlsx          ← no dependencies
-08_Business_Term.xlsx   ← depends on Domains
-09_Data_Set.xlsx        ← depends on Domains
-10_DQ_Rule_Template.xlsx ← standalone (link glossary after export)
-11_Relationships.xlsx   ← depends on ALL above
+01_Domain.xlsx              ← no dependencies
+02_Subdomain.xlsx           ← depends on Domains
+03_Regulation.xlsx          ← no dependencies
+04_Policy.xlsx              ← no dependencies
+05_Legal_Entity.xlsx        ← no dependencies
+06_Business_Area.xlsx       ← no dependencies
+07_Geography.xlsx           ← no dependencies
+08_System.xlsx              ← no dependencies
+09_AI_System.xlsx           ← no dependencies
+10_AI_Model.xlsx            ← depends on AI Systems
+11_Business_Term.xlsx       ← depends on Subdomains
+12_Data_Set.xlsx            ← depends on Systems / AI Systems
+13_DQ_Rule_Template.xlsx    ← depends on Business Terms
+14_Relationships.xlsx       ← depends on ALL above
 ```
 
 **Import method:** CDGC UI → Gear icon → Import → Upload file → Map columns (auto-maps if headers match) → Import
 
-**One file at a time** — do not combine sheets into one workbook for import.
+**One file at a time** — wait for COMPLETED status before uploading the next file. Do not combine sheets into one workbook.
 
-**After importing 08 and 09**, export Business Terms and Data Sets to get their system-assigned Reference IDs (BT-X, DS-X). Use those IDs to build the Relationships file.
+**Import 14_Relationships.xlsx last** — all referenced assets must exist first.
 
-**After importing 10**, export DQ Rule Templates to get DQR-X Reference IDs if needed.
+---
+
+### Option B — API import
+
+Write and execute a Python script that:
+
+1. **Authenticates** using the two-step JWT flow:
+   - POST to `<LOGIN_URL>/identity-service/api/v1/Login` with username/password → get `sessionId` and `orgId`
+   - GET `<LOGIN_URL>/identity-service/api/v1/jwt/Token?client_id=idmc_api&nonce=1234` with `IDS-SESSION-ID: <sessionId>` cookie → get JWT access token
+
+2. **Imports each file in order** by POSTing to:
+   `POST <ORG_URL>/data360/content/import/v1/assets`
+   Headers: `Authorization: Bearer <jwt_token>`, `X-INFA-ORG-ID: <orgId>`
+   Body: multipart form — `file=@<path_to_xlsx>`, `config={"validationPolicy": "CONTINUE_ON_ERROR_WARNING"}`
+   Capture the `jobId` from the response.
+
+3. **Polls each job** until complete:
+   `GET <ORG_URL>/data360/observable/v1/jobs/<jobId>`
+   Poll every 5 seconds. Terminal statuses: `COMPLETED`, `FAILED`, `COMPLETED_WITH_ERRORS`.
+   Print status updates inline.
+
+4. **Handles token expiry** — if any request returns HTTP 401, re-authenticate and retry once before failing.
+
+5. **Stops on hard failure** — if a job returns `FAILED`, stop and report which file failed and the error message. Do not proceed to the next file, as downstream files may depend on it.
+
+6. **Reports a summary** on completion:
+   ```
+   Import complete — 11 files processed
+     ✓ 01_Domain.xlsx         — COMPLETED
+     ✓ 02_Subdomain.xlsx      — COMPLETED
+     ...
+     ✓ 11_Relationships.xlsx  — COMPLETED
+   ```
+
+#### Script structure
+
+```python
+import requests, time, sys
+from pathlib import Path
+
+LOGIN_URL = "<LOGIN_URL>"
+ORG_URL   = "<ORG_URL>"
+USERNAME  = "<USERNAME>"
+PASSWORD  = "<PASSWORD>"
+IMPORT_DIR = Path("~/Downloads/CDGC_Import_<CustomerName>/").expanduser()
+
+FILES_IN_ORDER = [
+    "01_Domain.xlsx", "02_Subdomain.xlsx", "03_Regulation.xlsx",
+    "04_Policy.xlsx", "05_Legal_Entity.xlsx", "06_Business_Area.xlsx",
+    "07_Geography.xlsx", "08_System.xlsx", "09_AI_System.xlsx",
+    "10_AI_Model.xlsx", "11_Business_Term.xlsx", "12_Data_Set.xlsx",
+    "13_DQ_Rule_Template.xlsx", "14_Relationships.xlsx"
+]
+
+def authenticate():
+    # Step 1 — get session ID
+    resp = requests.post(f"{LOGIN_URL}/identity-service/api/v1/Login",
+        json={"username": USERNAME, "password": PASSWORD}, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    session_id = data["sessionId"]
+    org_id = data["orgId"]
+    # Step 2 — get JWT token
+    resp = requests.get(
+        f"{LOGIN_URL}/identity-service/api/v1/jwt/Token?client_id=idmc_api&nonce=1234",
+        headers={"IDS-SESSION-ID": session_id}, cookies={"USER_SESSION": session_id}, timeout=30)
+    resp.raise_for_status()
+    jwt_token = resp.json()["token"]
+    return jwt_token, org_id
+
+def import_file(jwt_token, org_id, filepath):
+    with open(filepath, "rb") as f:
+        resp = requests.post(
+            f"{ORG_URL}/data360/content/import/v1/assets",
+            headers={"Authorization": f"Bearer {jwt_token}", "X-INFA-ORG-ID": org_id},
+            files={"file": (filepath.name, f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+            data={"config": '{"validationPolicy": "CONTINUE_ON_ERROR_WARNING"}'},
+            timeout=60)
+    if resp.status_code == 401:
+        return None, "401"  # signal re-auth needed
+    resp.raise_for_status()
+    return resp.json()["jobId"], None
+
+def poll_job(jwt_token, org_id, job_id, filename):
+    url = f"{ORG_URL}/data360/observable/v1/jobs/{job_id}"
+    headers = {"Authorization": f"Bearer {jwt_token}", "X-INFA-ORG-ID": org_id}
+    terminal = {"COMPLETED", "FAILED", "COMPLETED_WITH_ERRORS"}
+    while True:
+        resp = requests.get(url, headers=headers, timeout=30)
+        resp.raise_for_status()
+        status = resp.json().get("status", "UNKNOWN")
+        print(f"  [{filename}] status: {status}")
+        if status in terminal:
+            return status, resp.json()
+        time.sleep(5)
+
+# Main
+jwt_token, org_id = authenticate()
+results = []
+for fname in FILES_IN_ORDER:
+    fpath = IMPORT_DIR / fname
+    if not fpath.exists():
+        print(f"SKIP — file not found: {fpath}")
+        continue
+    print(f"\nImporting {fname}...")
+    job_id, err = import_file(jwt_token, org_id, fpath)
+    if err == "401":
+        print("  Token expired — re-authenticating...")
+        jwt_token, org_id = authenticate()
+        job_id, err = import_file(jwt_token, org_id, fpath)
+    if err:
+        print(f"  FAILED to submit {fname}: {err}")
+        sys.exit(1)
+    status, detail = poll_job(jwt_token, org_id, job_id, fname)
+    results.append((fname, status))
+    if status == "FAILED":
+        print(f"\nFATAL — {fname} failed. Stopping import.")
+        print(detail)
+        sys.exit(1)
+
+print("\n── Import Summary ─────────────────────────")
+for fname, status in results:
+    icon = "✓" if status == "COMPLETED" else "⚠"
+    print(f"  {icon} {fname:<45} {status}")
+print(f"\n  Total: {len(results)} files processed")
+print("────────────────────────────────────────────")
+```
+
+Fill in `LOGIN_URL`, `ORG_URL`, `USERNAME`, `PASSWORD`, and `IMPORT_DIR` from the values collected in Step 0 before executing.
 
 ---
 
@@ -652,15 +859,17 @@ Tell the user to import files in this exact order:
 
 After all imports, verify in the CDGC UI:
 
-- [ ] Glossary tab shows 4 Domains with nested Subdomains
-- [ ] Business Terms visible under each Domain (31 total)
-- [ ] Policies (5) visible in Glossary
-- [ ] Regulations (7) visible in Glossary
-- [ ] Systems (4) visible in Glossary
-- [ ] Data Sets (5) visible in Glossary
-- [ ] DQ Rule Templates (10) — search by name to confirm
+- [ ] Glossary tab shows expected Domains with nested Subdomains
+- [ ] Business Terms visible under each Subdomain
+- [ ] Policies visible in Glossary
+- [ ] Regulations visible in Glossary
+- [ ] Systems and AI Systems visible in Glossary
+- [ ] AI Models visible in Glossary
+- [ ] Data Sets visible in Glossary
+- [ ] DQ Rule Templates visible — search by name to confirm
 - [ ] Relationships: open a Policy → Relationships tab → should show linked Business Terms
-- [ ] Relationships: open a System → Relationships tab → should show linked Data Sets
+- [ ] Relationships: open a Data Set → Relationships tab → should show linked Business Terms
+- [ ] System → Data Set relationships: open any System → Relationships tab → should show linked Data Sets (auto-created via Parent: System)
 
 ---
 
@@ -669,14 +878,19 @@ After all imports, verify in the CDGC UI:
 | Error | Fix |
 |-------|-----|
 | `Enter a valid value from [Create, Update, Delete]` | Operation column missing or wrong position |
-| `The parent is invalid or not present` | Parent asset doesn't exist yet — import Domains first |
+| `The parent is invalid or not present` | Parent asset doesn't exist yet — check import order |
+| `There are multiple parents with this asset` | Two parent columns populated on same row — leave all parent columns blank except one |
 | `Imported file contains empty values` | Remove header-only sheets from the workbook |
-| Pre-validation failure | Remove Instructions/Annexure sheets |
-| Business Terms not visible after import | Remove `Parent: Subdomain` column — use `Parent: Domain` only |
-| `Parent already exists` on Relationships | Relationship already created in a prior import — not an error |
+| Pre-validation failure (empty error CSV) | Usually multiple parents on a row — check all parent columns |
+| Business Terms not visible after import | Populate `Parent: Subdomain`, not `Parent: Domain` — single parent rule |
+| `Parent already exists` on Relationships | `System → Data Set` already created by Parent: System in Data Set import — remove that row from Relationships |
+| `Missing field: Technical Rule Reference` | `InformaticaCloudDataQuality` measuring method requires a live CDQE rule ID — change to `TechnicalScript` |
+| `Invalid Primary Glossary` | `Name \| RefID` format used — use name only (e.g., `Social Security Number`) |
+| Stakeholder prompt blocking import | Stakeholder field empty or not a real org user email — populate with valid email |
+| Reference ID rejected on create | Prefix collides with CDGC auto-generated IDs — use customer-specific prefix (e.g., `RKFBT-`) |
 | DQ Rule Template score not showing on Business Term | Expected — scores only appear after a live DQ scan against a connected source |
-| Policy Type / System Type invalid value | Check valid values in column specs above |
-| Relationship fails silently | Must use Reference IDs (e.g., `BT-23`), not display names |
+| Policy Type / System Type / System Purpose invalid value | Check valid values in column specs above — suborg rejects `Operational`, `Analytical`, `Reporting` for System Purpose |
+| Relationship fails silently | Must use Reference IDs (e.g., `RKFBT-23`), not display names |
 
 ---
 
