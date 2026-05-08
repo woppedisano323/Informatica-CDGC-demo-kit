@@ -2,7 +2,7 @@
 
 **File:** `cdgc-setup.md`  
 
-**Purpose:** Generate a complete, importable Informatica CDGC demo environment for a customer — 14 Excel files covering every major asset type, ready to bulk-import in order.
+**Purpose:** Generate a complete, importable Informatica CDGC demo environment tailored to a specific customer and industry vertical. The skill produces 14 Excel files that together cover every major CDGC asset type — Domains, Subdomains, Regulations, Policies, Legal Entities, Business Areas, Geographies, Systems, AI Systems, AI Models, Business Terms, Data Sets, DQ Rule Templates, and cross-asset Relationships. All content (names, descriptions, stakeholder emails, regulatory references, and data quality rules) is generated to match the customer's industry context. Files are formatted for CDGC's bulk import mechanism and sequenced so that parent assets always exist before their children are imported. The result is a demo environment that looks real, passes governance scorecard checks, and can be stood up in under an hour.
 
 ---
 
