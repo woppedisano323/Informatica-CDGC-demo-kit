@@ -222,28 +222,27 @@ Wait for COMPLETED status in the CDGC UI before uploading the next file. Import 
 
 ## Skills included in this repo
 
-All three skills are in the `skills/` directory. Copy to `~/.claude/commands/` to install.
+All three skills are in `.claude/commands/` and are **auto-loaded** when you open this repo in Claude Code — no manual install required.
 
-| Skill | File | Purpose |
-|-------|------|---------|
-| `/cdgc-setup` | `skills/cdgc-setup.md` | Generate a full CDGC demo environment for any vertical — no client documents required |
-| `/cdgc-client-setup` | `skills/cdgc-client-setup.md` | Build a CDGC environment from the client's actual documents (data dictionaries, policy PDFs, org charts) |
-| `/cdgc-wipe` | `skills/cdgc-wipe.md` | Wipe all governance assets from a CDGC org before reloading |
+| Skill | Purpose |
+|-------|---------|
+| `/cdgc-setup` | Generate a full CDGC demo environment for any vertical — no client documents required |
+| `/cdgc-client-setup` | Build a CDGC environment from the client's actual documents (data dictionaries, policy PDFs, org charts) |
+| `/cdgc-wipe` | Wipe all governance assets from a CDGC org before reloading |
 
-### Installation
+### Getting started
 
 ```bash
-# Clone the repo
-git clone https://github.com/woppedisano323/cdgc-demo-kit.git
-cd cdgc-demo-kit
-
-# Copy skills to your Claude commands folder
-cp skills/*.md ~/.claude/commands/
+# Clone the repo and open in Claude Code
+git clone https://github.com/woppedisano323/Informatica-CDGC-demo-kit.git
+cd Informatica-CDGC-demo-kit
 
 # Install Python dependencies (required for /cdgc-client-setup)
 pip install openpyxl pdfplumber python-docx
 ```
 
+Then type `/cdgc-setup`, `/cdgc-client-setup`, or `/cdgc-wipe` in Claude Code.
+
 ### Usage guide
 
-See `skills/CDGC_Client_Setup_Guide.md` for the full usage guide — installation, demo script, document tips, troubleshooting, and validated demo document set.
+See `.claude/commands/CDGC_Client_Setup_Guide.md` for the full guide — demo script, document tips, troubleshooting, and validated demo document set.

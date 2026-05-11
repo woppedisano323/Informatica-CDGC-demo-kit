@@ -1,15 +1,35 @@
-# Claude Code Custom Skills
+# Claude Code Custom Skills — CDGC Demo Kit
 
-This directory contains custom slash command skills for Claude Code.
+This directory contains the Claude Code slash command skills for Informatica CDGC demos. Skills are auto-loaded when you open this repo in Claude Code — no manual install required.
+
+---
+
+## Skills at a glance
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| `/cdgc-setup` | `cdgc-setup.md` | Generate a full CDGC demo environment for any vertical — no client documents required |
+| `/cdgc-client-setup` | `cdgc-client-setup.md` | Build a CDGC environment from the client's actual documents |
+| `/cdgc-wipe` | `cdgc-wipe.md` | Wipe all governance assets from a CDGC org before reloading |
+
+**Not sure which to use?**
+- Client has data dictionaries, policy PDFs, or glossaries → `/cdgc-client-setup`
+- No client documents, or running a quick vertical demo → `/cdgc-setup`
+- Need to clear a demo org before reloading → `/cdgc-wipe`
 
 ---
 
 ## `/cdgc-setup`
 
-**File:** `cdgc-setup.md`  
-**Purpose:** Generate a complete, importable Informatica CDGC demo environment for a customer — 14 Excel files covering every major asset type, ready to bulk-import in order.
+Generate a complete, importable CDGC demo environment for any industry vertical. Produces 14 Excel files covering every major asset type, ready to bulk-import in order.
 
-### What it produces
+**Invoke:** `/cdgc-setup`
+
+Claude will ask for: customer name, industry vertical, regulatory concerns, primary domains, and output directory. Customer name + vertical is enough — all other values default.
+
+**Supported verticals:** Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector & Government, Oil & Gas, Manufacturing
+
+**What it produces:**
 
 | # | File | Asset Type |
 |---|------|-----------|
@@ -28,122 +48,59 @@ This directory contains custom slash command skills for Claude Code.
 | 13 | `13_DQ_Rule_Template.xlsx` | DQ Rule Template |
 | 14 | `14_Relationships.xlsx` | Cross-asset relationships |
 
-### How to invoke
-
-```
-/cdgc-setup
-```
-
-Claude will ask for:
-1. **Customer name** — used to brand descriptions and stakeholder emails
-2. **Industry vertical** — see supported verticals below
-3. **Key regulatory concerns** — or "use defaults" for the vertical
-4. **Primary data domains** — or "use defaults"
-5. **Output directory** — default: `~/Downloads/CDGC_Import_<CustomerName>/`
-
-Providing just a customer name and vertical is enough — all other values default.
-
-### Supported verticals
-
-#### Financial Services
-Banks, credit unions, capital markets, insurance carriers, and fintech.
-
-| Asset Type | Count |
-|-----------|-------|
-| Domains | 4–5 |
-| Subdomains | 9–12 |
-| Regulations | 7–9 (BCBS 239, CCAR, FATCA, BSA/AML, SOX, MiFID II, GDPR) |
-| Policies | 5–8 |
-| Legal Entities | 4–6 |
-| Business Areas | 6–12 |
-| Geographies | 6–10 |
-| Systems | 4–8 (Systems + AI Systems) |
-| AI Models | 4–9 |
-| Business Terms | 30–40 |
-| Data Sets | 5–10 |
-| DQ Rule Templates | 10–15 |
-| Relationships | 25–50 |
-
-#### Healthcare
-Hospitals, health systems, payers, and life sciences.
-
-| Asset Type | Count |
-|-----------|-------|
-| Domains | 4 (Patient, Clinical, Claims & Billing, Compliance & Privacy) |
-| Subdomains | 9 |
-| Regulations | 6 (HIPAA, HITECH, CMS CoP, FDA 21 CFR Part 11, HL7 FHIR, ICD-10) |
-| Policies | 5 |
-| Systems | 4 (EHR, Claims Management, Clinical Data Warehouse, Regulatory Reporting) |
-| Business Terms | 28 |
-| Data Sets | 5 |
-| DQ Rule Templates | 10 |
-| Relationships | 25 |
-
-#### Retail & CPG
-Retailers, consumer goods, e-commerce, and grocery.
-
-| Asset Type | Count |
-|-----------|-------|
-| Domains | 4 (Customer, Product, Supply Chain, Transactions) |
-| Subdomains | 9 |
-| Regulations | 5 (GDPR, CCPA, PCI-DSS, California Prop 65, GS1 Standards) |
-| Policies | 5 |
-| Systems | 4 (POS, E-Commerce Platform, ERP/Inventory, Customer Data Platform) |
-| Business Terms | 28 |
-| Data Sets | 5 |
-| DQ Rule Templates | 10 |
-| Relationships | 25 |
-
-#### Insurance
-Property & casualty, life, health carriers, reinsurance, and brokerage.
-
-| Asset Type | Count |
-|-----------|-------|
-| Domains | 4 (Policy & Underwriting, Claims, Customer, Risk & Compliance) |
-| Subdomains | 9 |
-| Regulations | 7 (Solvency II, NAIC Model Laws, IFRS 17, State DOI, GDPR, CCPA, AML) |
-| Policies | 5 |
-| Systems | 4 (Policy Admin, Claims Management, Actuarial Modeling, Regulatory Reporting) |
-| Business Terms | 28 |
-| Data Sets | 5 |
-| DQ Rule Templates | 10 |
-| Relationships | 25 |
-
-#### Public Sector & Government
-Federal, state, and local agencies, defense, and public utilities.
-
-| Asset Type | Count |
-|-----------|-------|
-| Domains | 4 (Citizen Services, Program & Operations, Financial Management, Compliance & Reporting) |
-| Subdomains | 9 |
-| Regulations | 7 (FISMA, FedRAMP, OMB A-123, NIST 800-53, Privacy Act, FOIA, ATO) |
-| Policies | 5 |
-| Systems | 4 (Case Management, Financial Management, Grants Management, Data Analytics Platform) |
-| Business Terms | 28 |
-| Data Sets | 5 |
-| DQ Rule Templates | 10 |
-| Relationships | 25 |
+**Import order:** `01 → 02 → 03 → ... → 14` — always in sequence, one file at a time, wait for COMPLETED before uploading the next.
 
 ---
 
-### Import order
+## `/cdgc-client-setup`
 
-Always import in file number order — CDGC validates parent references at import time.
+Build a complete CDGC import package from documents the client already has — data dictionaries, policy PDFs, org charts, glossaries, Excel schemas. Parses the documents, scores confidence, generates a color-coded Review Workbook for approval, then produces all 14 import files.
 
-```
-01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13 → 14
-```
+**Invoke:** `/cdgc-client-setup`
 
-Wait for COMPLETED status in the CDGC UI before uploading the next file. Import `14_Relationships.xlsx` last — all referenced assets must exist first.
+Claude will ask for: client name, project name, file paths to their documents, and fallback preference (A/B/C).
 
-**Import method:** CDGC UI → Gear icon → Import → Upload file → Map columns → Import (one file at a time).
+**Accepts:** CSV, Excel (multi-tab), PDF, Word, plain text
+
+**Fallback options when a field can't be inferred:**
+- **A** — TODO markers for manual review
+- **B** — auto-fill from vertical defaults
+- **C** — interactive gap interview
+
+**Review Workbook color guide:**
+
+| Color | Meaning |
+|-------|---------|
+| White | HIGH confidence — ready to import |
+| Yellow | MEDIUM — spot-check recommended |
+| Orange | LOW — review carefully |
+| Red | TODO or conflict — action required |
+
+**Prerequisites:** Python 3.8+ and `pip install openpyxl pdfplumber python-docx` (or run `install_cdgc_deps.sh`)
+
+**Full usage guide:** See `CDGC_Client_Setup_Guide.md` in this directory.
+
+**Validated demo document set (Healthcare):**
+Three authentic HHS/ONC/CMS PDFs in `~/Downloads/CDGC_Demo_Docs/` — use with client name `ONC`, project `HealthcareDemo`.
 
 ---
 
-### Sharing this skill
+## `/cdgc-wipe`
 
-**With a colleague:** Send them `cdgc-setup.md`. They save it to `~/.claude/commands/cdgc-setup.md` and type `/cdgc-setup` in any Claude Code session.
+Wipe all governance assets from a CDGC org. Authenticates via IDMC JWT, scans all asset types, confirms total count, then deletes in dependency order (children before parents). Loops until 404 confirms each asset is fully gone.
 
-**With a team via git:** Add `cdgc-setup.md` to a shared repo under `.claude/commands/cdgc-setup.md` at the repo root. Anyone who clones the repo and opens Claude Code in that directory gets the skill automatically.
+**Invoke:** `/cdgc-wipe`
 
-**Via plugin marketplace (advanced):** Package with a `plugin.json` manifest and distribute via a private marketplace URL. Team members install with `claude plugin add <marketplace-url>`.
+**Requires:** IDMC username and password (entered at runtime, never stored)
+
+**Deletes in order:** DQ Rule Templates → Business Terms → Data Sets → AI Models → AI Systems → Systems → Business Areas → Legal Entities → Geographies → Policies → Regulations → Subdomains → Domains
+
+**Warning:** Destructive and irreversible. Intended for sandbox and demo orgs only. Always confirms count and requires you to type `CONFIRM` before deleting anything.
+
+---
+
+## Import method (all skills)
+
+**CDGC UI → Gear icon → Import → Upload → Auto-map → Import**
+
+One file at a time. Wait for **COMPLETED** status before uploading the next file.
