@@ -217,3 +217,33 @@ Wait for COMPLETED status in the CDGC UI before uploading the next file. Import 
 **With a team via git:** Add `cdgc-setup.md` to a shared repo under `.claude/commands/cdgc-setup.md` at the repo root. Anyone who clones the repo and opens Claude Code in that directory gets the skill automatically.
 
 **Via plugin marketplace (advanced):** Package with a `plugin.json` manifest and distribute via a private marketplace URL. Team members install with `claude plugin add <marketplace-url>`.
+
+---
+
+## Skills included in this repo
+
+All three skills are in the `skills/` directory. Copy to `~/.claude/commands/` to install.
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| `/cdgc-setup` | `skills/cdgc-setup.md` | Generate a full CDGC demo environment for any vertical — no client documents required |
+| `/cdgc-client-setup` | `skills/cdgc-client-setup.md` | Build a CDGC environment from the client's actual documents (data dictionaries, policy PDFs, org charts) |
+| `/cdgc-wipe` | `skills/cdgc-wipe.md` | Wipe all governance assets from a CDGC org before reloading |
+
+### Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/woppedisano323/cdgc-demo-kit.git
+cd cdgc-demo-kit
+
+# Copy skills to your Claude commands folder
+cp skills/*.md ~/.claude/commands/
+
+# Install Python dependencies (required for /cdgc-client-setup)
+pip install openpyxl pdfplumber python-docx
+```
+
+### Usage guide
+
+See `skills/CDGC_Client_Setup_Guide.md` for the full usage guide — installation, demo script, document tips, troubleshooting, and validated demo document set.
