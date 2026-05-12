@@ -113,7 +113,7 @@ JWT token and are not stored anywhere.
 Collect:
 - `USERNAME` — IDMC username (not necessarily an email address)
 - `PASSWORD` — IDMC password (use getpass — never print)
-- `CUSTOMER_PREFIX` — the externalId prefix used when the assets were created (e.g., `RKF` for Ronkonkoma Financial, `ABC` for Acme Bank). Used to probe for AI Models and AI Systems which cannot be found via classType search on suborg accounts. If unsure, check any existing asset's Reference ID in the CDGC UI — it will start with this prefix.
+- `CUSTOMER_NAME` — the customer name used when the assets were originally generated (e.g., `Ronkonkoma Financial`). The prefix is derived from this name using the same logic as `/cdgc-setup`: take the first letter of each word, uppercase, up to 4 characters (e.g., `Ronkonkoma Financial` → `RKF`, `First Capital Bank` → `FCB`, `Acme Healthcare` → `AH`). Show the derived prefix to the user and confirm before proceeding — they can override it if needed.
 
 ---
 
@@ -152,9 +152,15 @@ SEARCH_TYPES = [
     ("Domains",           "com.infa.ccgf.models.governance.Domain"),
 ]
 
-username        = input("IDMC Username: ")
-password        = getpass.getpass("IDMC Password: ")
-customer_prefix = input("Customer prefix (e.g. RKF for Ronkonkoma): ").strip().upper()
+username      = input("IDMC Username: ")
+password      = getpass.getpass("IDMC Password: ")
+customer_name = input("Customer name (as used when assets were generated, e.g. Ronkonkoma Financial): ").strip()
+
+# Derive prefix the same way /cdgc-setup does — initials of each word, uppercase, up to 4 chars
+derived = "".join(w[0].upper() for w in customer_name.split() if w)[:4]
+override = input(f"  Derived prefix: {derived!r} — press Enter to confirm or type a different prefix: ").strip().upper()
+customer_prefix = override if override else derived
+print(f"  Using prefix: {customer_prefix}")
 
 resp = requests.post(f"{LOGIN_URL}/identity-service/api/v1/Login",
     json={"username": username, "password": password}, timeout=30)

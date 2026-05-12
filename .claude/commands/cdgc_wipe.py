@@ -22,9 +22,15 @@ SEARCH_TYPES = [
     ("Domains",           "com.infa.ccgf.models.governance.Domain"),
 ]
 
-username        = input("IDMC Username: ")
-password        = getpass.getpass("IDMC Password: ")
-customer_prefix = input("Customer prefix (e.g. RKF for Ronkonkoma): ").strip().upper()
+username      = input("IDMC Username: ")
+password      = getpass.getpass("IDMC Password: ")
+customer_name = input("Customer name (as used when assets were generated, e.g. Ronkonkoma Financial): ").strip()
+
+# Derive prefix the same way /cdgc-setup does — initials of each word, uppercase, up to 4 chars
+derived = "".join(w[0].upper() for w in customer_name.split() if w)[:4]
+override = input(f"  Derived prefix: {derived!r} — press Enter to confirm or type a different prefix: ").strip().upper()
+customer_prefix = override if override else derived
+print(f"  Using prefix: {customer_prefix}")
 
 resp = requests.post(f"{LOGIN_URL}/identity-service/api/v1/Login",
     json={"username": username, "password": password}, timeout=30)
