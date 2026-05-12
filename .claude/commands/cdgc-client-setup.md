@@ -346,7 +346,7 @@ Rules:
 - Skip logic is sheet-aware:
   - All sheets except Relationships: skip if `Name` is empty or starts with `TODO`
   - Relationships sheet: skip if `Source Asset` or `Target Asset` is empty or starts with `TODO` (Relationships have no `Name` column)
-- Auto-generate `Reference ID` values if blank (DOM-1, BT-1, etc.)
+- Auto-generate `Reference ID` values if blank using a customer-specific prefix derived from the client name — take the first letter of each word, uppercase, up to 4 characters (e.g., `Acme Healthcare` → `AH`, `ONC HealthcareDemo` → `OH`). Do NOT use bare CDGC prefixes like `DOM-1`, `BT-1` — those collide with system-generated IDs and are rejected on create. Use `<PREFIX>DOM-1`, `<PREFIX>BT-1`, etc.
 - Validate `Operation` = `Create`, `Lifecycle` is a valid value, boolean fields are lowercase `true`/`false`
 - Report a count of skipped rows and why
 
