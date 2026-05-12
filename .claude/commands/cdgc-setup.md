@@ -1,5 +1,5 @@
 ---
-description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any industry vertical. Supports Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector, Oil & Gas, and Manufacturing. Generates all 11 asset type import files. Choose manual UI upload or fully automated API import with job polling.
+description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo environment for any industry vertical. Supports Financial Services, Healthcare, Retail & CPG, Insurance, Public Sector, Oil & Gas, and Manufacturing. Generates all 14 import files covering every major asset type. Choose manual UI upload or fully automated API import with job polling. API method validated end-to-end May 2026.
 ---
 
 # CDGC Demo Environment Setup
@@ -41,7 +41,7 @@ How would you like to import the files into CDGC once they are generated?
      Works in all environments. No credentials needed now.
 
   B) API (automated)
-     I will import all 11 files programmatically and poll until complete.
+     I will import all 14 files programmatically and poll until complete.
      Requires your IDMC org URL, username, and password.
      Note: This requires the Import privilege in your org and a reachable pod URL.
      Not available for SAML-only orgs without API access enabled.
@@ -750,108 +750,237 @@ Write and execute a Python script that:
 
 6. **Reports a summary** on completion:
    ```
-   Import complete — 11 files processed
-     ✓ 01_Domain.xlsx         — COMPLETED
-     ✓ 02_Subdomain.xlsx      — COMPLETED
+   Import complete — 14 files processed
+     ✓ 01_Domain.xlsx              — COMPLETED
+     ✓ 02_Subdomain.xlsx           — COMPLETED
      ...
-     ✓ 11_Relationships.xlsx  — COMPLETED
+     ✓ 14_Relationships.xlsx       — COMPLETED
    ```
 
 #### Script structure
 
+This is the validated, hardened version — tested end-to-end May 2026. Also available as `cdgc_api_import.py` in the repo.
+
+Key design decisions:
+- **`requests` multipart with explicit XLSX content type** — curl subprocess format was rejected server-side (jobs returned COMPLETED with `tasks:[]`); `requests` with explicit content types is the only working approach
+- **`poll_job` circuit breaker** — 72 polls max (6 minutes), 502/503/504 retry, empty response handling
+- **Post-import verification scan** — reuses existing JWT to confirm actual counts per asset type
+
 ```python
-import requests, time, sys
+import requests
+import getpass
+import time
+import sys
+import json
 from pathlib import Path
 
-LOGIN_URL = "<LOGIN_URL>"
-ORG_URL   = "<ORG_URL>"
-USERNAME  = "<USERNAME>"
-PASSWORD  = "<PASSWORD>"
+LOGIN_URL  = "https://dmp-us.informaticacloud.com"
+ORG_URL    = "https://idmc-api.dmp-us.informaticacloud.com"
 IMPORT_DIR = Path("~/Downloads/CDGC_Import_<CustomerName>/").expanduser()
 
 FILES_IN_ORDER = [
-    "01_Domain.xlsx", "02_Subdomain.xlsx", "03_Regulation.xlsx",
-    "04_Policy.xlsx", "05_Legal_Entity.xlsx", "06_Business_Area.xlsx",
-    "07_Geography.xlsx", "08_System.xlsx", "09_AI_System.xlsx",
-    "10_AI_Model.xlsx", "11_Business_Term.xlsx", "12_Data_Set.xlsx",
-    "13_DQ_Rule_Template.xlsx", "14_Relationships.xlsx"
+    "01_Domain.xlsx",
+    "02_Subdomain.xlsx",
+    "03_Regulation.xlsx",
+    "04_Policy.xlsx",
+    "05_Legal_Entity.xlsx",
+    "06_Business_Area.xlsx",
+    "07_Geography.xlsx",
+    "08_System.xlsx",
+    "09_AI_System.xlsx",
+    "10_AI_Model.xlsx",
+    "11_Business_Term.xlsx",
+    "12_Data_Set.xlsx",
+    "13_DQ_Rule_Template.xlsx",
+    "14_Relationships.xlsx",
 ]
 
-def authenticate():
-    # Step 1 — get session ID
-    resp = requests.post(f"{LOGIN_URL}/identity-service/api/v1/Login",
-        json={"username": USERNAME, "password": PASSWORD}, timeout=30)
+def authenticate(username, password):
+    resp = requests.post(
+        f"{LOGIN_URL}/identity-service/api/v1/Login",
+        json={"username": username, "password": password},
+        timeout=30
+    )
     resp.raise_for_status()
     data = resp.json()
     session_id = data["sessionId"]
     org_id = data["orgId"]
-    # Step 2 — get JWT token
     resp = requests.get(
         f"{LOGIN_URL}/identity-service/api/v1/jwt/Token?client_id=idmc_api&nonce=1234",
-        headers={"IDS-SESSION-ID": session_id}, cookies={"USER_SESSION": session_id}, timeout=30)
+        headers={"IDS-SESSION-ID": session_id},
+        cookies={"USER_SESSION": session_id},
+        timeout=30
+    )
     resp.raise_for_status()
-    jwt_token = resp.json()["token"]
+    token_data = resp.json()
+    jwt_token = token_data.get("token") or token_data.get("jwt_token") or token_data.get("access_token")
+    print(f"  ✓ Authenticated — orgId: {org_id}")
     return jwt_token, org_id
 
 def import_file(jwt_token, org_id, filepath):
+    headers = {
+        "Authorization": f"Bearer {jwt_token}",
+        "X-INFA-ORG-ID": org_id,
+    }
     with open(filepath, "rb") as f:
+        files = {
+            "file": (filepath.name, f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            "config": (None, '{"validationPolicy":"CONTINUE_ON_ERROR_WARNING"}', "application/json"),
+        }
         resp = requests.post(
             f"{ORG_URL}/data360/content/import/v1/assets",
-            headers={"Authorization": f"Bearer {jwt_token}", "X-INFA-ORG-ID": org_id},
-            files={"file": (filepath.name, f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-            data={"config": '{"validationPolicy": "CONTINUE_ON_ERROR_WARNING"}'},
+            headers=headers,
+            files=files,
             timeout=60)
     if resp.status_code == 401:
-        return None, "401"  # signal re-auth needed
-    resp.raise_for_status()
-    return resp.json()["jobId"], None
+        return None, "401"
+    if not resp.text.strip():
+        return None, "Empty response from import endpoint"
+    try:
+        data = resp.json()
+    except Exception:
+        return None, f"Invalid response: {resp.text[:200]}"
+    if resp.status_code not in (200, 201, 202):
+        return None, f"HTTP {resp.status_code}: {resp.text[:300]}"
+    job_id = data.get("jobId") or data.get("id")
+    if job_id:
+        return job_id, None
+    return None, f"No jobId in response: {resp.text[:300]}"
 
 def poll_job(jwt_token, org_id, job_id, filename):
     url = f"{ORG_URL}/data360/observable/v1/jobs/{job_id}"
     headers = {"Authorization": f"Bearer {jwt_token}", "X-INFA-ORG-ID": org_id}
-    terminal = {"COMPLETED", "FAILED", "COMPLETED_WITH_ERRORS"}
-    while True:
-        resp = requests.get(url, headers=headers, timeout=30)
-        resp.raise_for_status()
-        status = resp.json().get("status", "UNKNOWN")
-        print(f"  [{filename}] status: {status}")
+    terminal = {"COMPLETED", "FAILED", "COMPLETED_WITH_ERRORS", "PARTIAL_COMPLETED", "PARTIAL_SUCCESS"}
+    dots = 0
+    for attempt in range(72):  # max 6 minutes
+        try:
+            resp = requests.get(url, headers=headers, timeout=30)
+        except requests.exceptions.RequestException:
+            time.sleep(5)
+            continue
+        if resp.status_code in (429, 502, 503, 504):
+            time.sleep(10)
+            continue
+        if not resp.text.strip():
+            time.sleep(5)
+            continue
+        try:
+            data = resp.json()
+        except Exception:
+            time.sleep(5)
+            continue
+        status = data.get("status", "UNKNOWN")
         if status in terminal:
-            return status, resp.json()
+            print(f"\r  [{filename}] {status}          ")
+            if status in ("COMPLETED_WITH_ERRORS", "PARTIAL_COMPLETED", "PARTIAL_SUCCESS"):
+                print(f"  ⚠ Detail: {json.dumps(data.get('errors', data.get('detail', '')))[:300]}")
+            return status, data
+        print(f"\r  [{filename}] {status}{'.' * (dots % 4)}   ", end="", flush=True)
+        dots += 1
         time.sleep(5)
+    print(f"\r  [{filename}] TIMEOUT — job did not complete in 6 minutes")
+    return "TIMEOUT", {}
 
-# Main
-jwt_token, org_id = authenticate()
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+print("\nCDGC API Import")
+print("───────────────────────────────────────────")
+username = input("IDMC Username: ")
+password = getpass.getpass("IDMC Password: ")
+
+print("\nAuthenticating...")
+jwt_token, org_id = authenticate(username, password)
+
 results = []
 for fname in FILES_IN_ORDER:
     fpath = IMPORT_DIR / fname
     if not fpath.exists():
-        print(f"SKIP — file not found: {fpath}")
+        print(f"\nSKIP — file not found: {fpath}")
+        results.append((fname, "SKIPPED"))
         continue
+
     print(f"\nImporting {fname}...")
     job_id, err = import_file(jwt_token, org_id, fpath)
+
     if err == "401":
         print("  Token expired — re-authenticating...")
-        jwt_token, org_id = authenticate()
+        jwt_token, org_id = authenticate(username, password)
         job_id, err = import_file(jwt_token, org_id, fpath)
+
     if err:
-        print(f"  FAILED to submit {fname}: {err}")
+        print(f"  FAILED to submit: {err}")
+        results.append((fname, "SUBMIT_FAILED"))
+        print(f"\nFATAL — stopping import. Fix {fname} and retry.")
         sys.exit(1)
+
     status, detail = poll_job(jwt_token, org_id, job_id, fname)
     results.append((fname, status))
-    if status == "FAILED":
-        print(f"\nFATAL — {fname} failed. Stopping import.")
-        print(detail)
+
+    if status in ("FAILED", "TIMEOUT"):
+        print(f"\nFATAL — {fname} {status}. Stopping import.")
+        print(json.dumps(detail)[:500])
         sys.exit(1)
 
-print("\n── Import Summary ─────────────────────────")
+print("\n── Import Summary ──────────────────────────────────────────")
 for fname, status in results:
-    icon = "✓" if status == "COMPLETED" else "⚠"
-    print(f"  {icon} {fname:<45} {status}")
-print(f"\n  Total: {len(results)} files processed")
-print("────────────────────────────────────────────")
+    icon = "✓" if status == "COMPLETED" else "⚠" if status == "COMPLETED_WITH_ERRORS" else "✗"
+    print(f"  {icon}  {fname:<45} {status}")
+print("────────────────────────────────────────────────────────────")
+
+# ── Verification scan ─────────────────────────────────────────────────────────
+print("\nVerifying assets in org...\n")
+time.sleep(3)
+
+VERIFY_TYPES = [
+    ("Domains",           "com.infa.ccgf.models.governance.Domain"),
+    ("Subdomains",        "com.infa.ccgf.models.governance.Subdomain"),
+    ("Regulations",       "com.infa.ccgf.models.governance.Regulation"),
+    ("Policies",          "com.infa.ccgf.models.governance.Policy"),
+    ("Legal Entities",    "com.infa.ccgf.models.governance.LegalEntity"),
+    ("Business Areas",    "com.infa.ccgf.models.governance.BusinessArea"),
+    ("Geographies",       "com.infa.ccgf.models.governance.Geography"),
+    ("Systems",           "com.infa.ccgf.models.governance.System"),
+    ("AI Systems",        "com.infa.ccgf.models.governance.AISystem"),
+    ("AI Models",         "com.infa.ccgf.models.governance.AIModel"),
+    ("Business Terms",    "com.infa.ccgf.models.governance.BusinessTerm"),
+    ("Data Sets",         "com.infa.ccgf.models.governance.DataSet"),
+    ("DQ Rule Templates", "com.infa.ccgf.models.governance.RuleTemplate"),
+]
+
+h_s = {"Authorization": f"Bearer {jwt_token}", "X-INFA-ORG-ID": org_id, "Content-Type": "application/json"}
+grand_total = 0
+for label, ct in VERIFY_TYPES:
+    for attempt in range(3):
+        r = requests.post(
+            f"{ORG_URL}/data360/search/v1/assets?knowledgeQuery=*&segments=summary",
+            headers=h_s,
+            json={"from": 0, "size": 100,
+                  "filterSpec": [{"type": "simple", "attribute": "core.classType", "values": [ct]}]},
+            timeout=30)
+        if not r.text.strip():
+            time.sleep(2)
+            continue
+        try:
+            body = r.json()
+            count = len(body.get("hits", []))
+            break
+        except Exception:
+            time.sleep(2)
+            continue
+    else:
+        count = "?"
+    grand_total += count if isinstance(count, int) else 0
+    icon = "✓" if isinstance(count, int) and count > 0 else "⚠"
+    print(f"  {icon}  {label:<25}: {count}")
+    time.sleep(0.3)
+
+print(f"\n  Total assets in org: {grand_total}")
+print("────────────────────────────────────────────────────────────\n")
 ```
 
-Fill in `LOGIN_URL`, `ORG_URL`, `USERNAME`, `PASSWORD`, and `IMPORT_DIR` from the values collected in Step 0 before executing.
+Fill in `IMPORT_DIR` from the customer name collected in Step 1. `LOGIN_URL` and `ORG_URL` default to `dmp-us` — change the pod region prefix if the customer is on a different pod (e.g., `dmp-eu`).
+
+**Note:** AI Systems and AI Models will show `⚠ 0` in the verification scan — classType search is broken on suborg for those two types. Verify counts in the CDGC UI directly.
 
 ---
 

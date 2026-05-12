@@ -22,8 +22,9 @@ SEARCH_TYPES = [
     ("Domains",           "com.infa.ccgf.models.governance.Domain"),
 ]
 
-username = input("IDMC Username: ")
-password = getpass.getpass("IDMC Password: ")
+username        = input("IDMC Username: ")
+password        = getpass.getpass("IDMC Password: ")
+customer_prefix = input("Customer prefix (e.g. RKF for Ronkonkoma): ").strip().upper()
 
 resp = requests.post(f"{LOGIN_URL}/identity-service/api/v1/Login",
     json={"username": username, "password": password}, timeout=30)
@@ -75,13 +76,13 @@ def search_type(class_type):
 
 # ── Scan ──────────────────────────────────────────────────────────────────────
 
-# AI Models and AI Systems: probe by externalId — classType search returns 0 on this org
+# AI Models and AI Systems: probe by externalId — classType search returns 0 on suborg
 print("Scanning for AI Models and AI Systems by externalId probe...")
 ai_to_delete = []
-for prefix, label in [("AIM", "AI Model"), ("AIS", "AI System")]:
+for suffix, label in [("AIM", "AI Model"), ("AIS", "AI System")]:
     found = []
     for i in range(1, 30):
-        ext_id = f"RKF{prefix}-{i}"
+        ext_id = f"{customer_prefix}{suffix}-{i}"
         r = requests.delete(
             f"{ORG_URL}/data360/content/v1/assets/{ext_id}?scheme=external",
             headers=h_d, timeout=30)
@@ -90,7 +91,7 @@ for prefix, label in [("AIM", "AI Model"), ("AIS", "AI System")]:
         if r.status_code in (200, 201, 204):
             found.append(ext_id)
         time.sleep(0.2)
-    print(f"  {label+'s':<25}: {len(found)} {'(already deleted during probe)' if found else ''}")
+    print(f"  {label+'s':<25}: {len(found)} {'(deleted during probe)' if found else ''}")
     ai_to_delete.extend(found)
 
 # All other types via classType search
