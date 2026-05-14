@@ -10,7 +10,8 @@
 | `cdgc_api_import.py` | Standalone API import script — authenticate, import 14 files in order, poll for completion, verify counts. Validated end-to-end 2026-05-12. |
 | `cdgc_discover_classtypes.py` | Diagnostic utility — query the CDGC API to list asset counts and externalIds by type. Use before/after import to verify org state. |
 | `install_cdgc_deps.sh` | Python dependency installer — run once per machine |
-| `CDGC_Client_Setup_Guide.md` | This guide |
+| `CDGC_Client_Setup_Guide.md` | This guide — `/cdgc-client-setup` workflow, resume flow, document tips, troubleshooting |
+| `CDGC_Demo_Setup_Guide.md` | Companion guide — `/cdgc-setup` verticals, asset counts, import instructions |
 
 ---
 
@@ -24,7 +25,7 @@
 
 **Which path are you on?**
 
-- **Have source documents and want to run now?** → `/cdgc-client-setup`
+- **Have source documents and want to run now?** → Path A below
 - **Have a Review Workbook already generated (or returned by the client)?** → `/cdgc-client-setup resume <path>`
 
 ---
@@ -36,10 +37,12 @@ Everything happens in one sitting. The practitioner stays in Claude Code through
 ```
 1. /cdgc-client-setup
 2. Provide: client name, project name, source documents, fallback preference (A/B/C)
-3. Claude parses documents → generates color-coded Review Workbook
-4. Review inline → Approve → choose import method (UI or API)
-5. Claude generates 14 import files
-6. Import into CDGC in order
+3. Claude parses documents → generates Review Workbook
+   Output: ~/Downloads/CDGC_Import_<ClientName>-<ProjectName>/00_Review_<ClientName>-<ProjectName>.xlsx
+4. Review inline (white = ready, yellow = spot-check, orange = review, red = action required)
+5. Approve → choose import method (UI or API)
+6. Claude generates 14 import files in the same folder
+7. Import into CDGC in order (01 → 14), one file at a time, wait for COMPLETED each
 ```
 
 ---
@@ -52,19 +55,22 @@ The review cycle happens outside Claude Code. The workbook is the handoff artifa
 Session 1 — practitioner has source documents:
   1. /cdgc-client-setup
   2. Provide: client name, project name, source documents, fallback preference (A/B/C)
-  3. Claude parses documents → generates color-coded Review Workbook
+  3. Claude parses documents → generates Review Workbook
+     Output: ~/Downloads/CDGC_Import_<ClientName>-<ProjectName>/00_Review_<ClientName>-<ProjectName>.xlsx
   4. Choose "Send for client review" → Claude provides handoff instructions
   5. Share workbook with client team
 
   [Client fills in owners, corrects terms, resolves conflicts — days or weeks]
 
 Session 2 — workbook returned (any practitioner, any machine):
-  6. /cdgc-client-setup resume <path-to-edited-workbook>
+  6. /cdgc-client-setup resume ~/Downloads/CDGC_Import_<ClientName>-<ProjectName>/00_Review_<ClientName>-<ProjectName>.xlsx
   7. Claude validates workbook → reports remaining TODOs + broken parent links
   8. Choose import method (UI or API)
   9. Claude generates 14 import files
-  10. Import into CDGC in order
+  10. Import into CDGC in order (01 → 14), one file at a time, wait for COMPLETED each
 ```
+
+> For the `/cdgc-setup` (vertical demo) workflow, see `CDGC_Demo_Setup_Guide.md`.
 
 ### Output files
 
