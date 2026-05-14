@@ -222,13 +222,22 @@ Wait for COMPLETED status in the CDGC UI before uploading the next file. Import 
 
 ## Skills included in this repo
 
-All three skills are in `.claude/commands/` and are **auto-loaded** when you open this repo in Claude Code — no manual install required.
+All skills are in `.claude/commands/` and are **auto-loaded** when you open this repo in Claude Code — no manual install required.
 
-| Skill | Purpose |
-|-------|---------|
-| `/cdgc-setup` | Generate a full CDGC demo environment for any vertical — no client documents required |
-| `/cdgc-client-setup` | Build a CDGC environment from the client's actual documents (data dictionaries, policy PDFs, org charts) |
-| `/cdgc-wipe` | Wipe all governance assets from a CDGC org before reloading |
+| Skill | File | Purpose |
+|-------|------|---------|
+| `/cdgc-setup` | `cdgc-setup.md` | Generate a full CDGC demo environment for any vertical — no client documents required |
+| `/cdgc-client-setup` | `cdgc-client-setup.md` | Build a CDGC environment from the client's actual documents (data dictionaries, policy PDFs, org charts) |
+| `/cdgc-wipe` | `cdgc-wipe.md` | Wipe all governance assets from a CDGC org before reloading |
+
+### Supporting scripts and files
+
+| File | Purpose |
+|------|---------|
+| `cdgc_api_import.py` | Standalone API import script — authenticate, import 14 files in order, poll for completion, verify counts. Validated end-to-end 2026-05-12. |
+| `cdgc_discover_classtypes.py` | Diagnostic utility — query the CDGC API to list asset counts by type. Use before/after import to verify org state. |
+| `install_cdgc_deps.sh` | Python dependency installer — run once per machine |
+| `CDGC_Client_Setup_Guide.md` | Full usage guide — workflow, demo script, document tips, troubleshooting |
 
 ### Getting started
 
@@ -237,12 +246,12 @@ All three skills are in `.claude/commands/` and are **auto-loaded** when you ope
 git clone https://github.com/woppedisano323/Informatica-CDGC-demo-kit.git
 cd Informatica-CDGC-demo-kit
 
-# Install Python dependencies (required for /cdgc-client-setup)
-pip install openpyxl pdfplumber python-docx
+# Install Python dependencies (required for /cdgc-client-setup and API import)
+pip install openpyxl pdfplumber python-docx requests
 ```
 
 Then type `/cdgc-setup`, `/cdgc-client-setup`, or `/cdgc-wipe` in Claude Code.
 
 ### Usage guide
 
-See `.claude/commands/CDGC_Client_Setup_Guide.md` for the full guide — demo script, document tips, troubleshooting, and validated demo document set.
+See `.claude/commands/CDGC_Client_Setup_Guide.md` for the full guide — workflow paths (demo vs. engagement), demo script, document tips, API import instructions, and troubleshooting.

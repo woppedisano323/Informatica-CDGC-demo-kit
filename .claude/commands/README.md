@@ -56,9 +56,13 @@ Claude will ask for: customer name, industry vertical, regulatory concerns, prim
 
 Build a complete CDGC import package from documents the client already has — data dictionaries, policy PDFs, org charts, glossaries, Excel schemas. Parses the documents, scores confidence, generates a color-coded Review Workbook for approval, then produces all 14 import files.
 
-**Invoke:** `/cdgc-client-setup`
+**Two entry points:**
+- `/cdgc-client-setup` — full flow: parse documents → Review Workbook → generate import files
+- `/cdgc-client-setup resume <path>` — pick up from an edited Review Workbook returned by the client or generated in a prior session
 
-Claude will ask for: client name, project name, file paths to their documents, and fallback preference (A/B/C).
+**Which to use:**
+- Have source documents now → `/cdgc-client-setup`
+- Have a Review Workbook already generated (or returned by client) → `/cdgc-client-setup resume <path>`
 
 **Accepts:** CSV, Excel (multi-tab), PDF, Word, plain text
 
@@ -76,7 +80,11 @@ Claude will ask for: client name, project name, file paths to their documents, a
 | Orange | LOW — review carefully |
 | Red | TODO or conflict — action required |
 
-**Prerequisites:** Python 3.8+ and `pip install openpyxl pdfplumber python-docx` (or run `install_cdgc_deps.sh`)
+**Import method** (asked at approval or resume time — not at intake):
+- **A** — Manual UI: CDGC UI → Gear icon → Import → Upload → Auto-map → Import
+- **B** — API automated: skill generates and runs `cdgc_api_import.py`, polls for completion, and prints a verification scan
+
+**Prerequisites:** Python 3.8+ and `pip install openpyxl pdfplumber python-docx requests` (or run `install_cdgc_deps.sh`)
 
 **Full usage guide:** See `CDGC_Client_Setup_Guide.md` in this directory.
 
@@ -99,8 +107,20 @@ Wipe all governance assets from a CDGC org. Authenticates via IDMC JWT, scans al
 
 ---
 
+## Supporting scripts
+
+| File | Purpose |
+|------|---------|
+| `cdgc_api_import.py` | Standalone API import — authenticate, upload 14 files in order, poll for COMPLETED, verify asset counts. Validated end-to-end 2026-05-12. Run: `python3 cdgc_api_import.py` |
+| `cdgc_discover_classtypes.py` | Diagnostic — query CDGC API for asset counts and externalIds by type. Useful before/after import to confirm org state. Run: `python3 cdgc_discover_classtypes.py` |
+| `install_cdgc_deps.sh` | Installs all required Python packages in one step |
+
+---
+
 ## Import method (all skills)
 
-**CDGC UI → Gear icon → Import → Upload → Auto-map → Import**
+**Option A — Manual UI:** CDGC UI → Gear icon → Import → Upload → Auto-map → Import
+
+**Option B — API:** Use `cdgc_api_import.py` or choose API at approval/resume time in `/cdgc-client-setup` or `/cdgc-setup`
 
 One file at a time. Wait for **COMPLETED** status before uploading the next file.
