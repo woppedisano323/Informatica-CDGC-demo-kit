@@ -33,12 +33,49 @@ This skill builds a complete, client-specific CDGC import package from documents
   ```bash
   pip install openpyxl pdfplumber python-docx requests
   ```
-  (`requests` is needed for API import — Option B in Step 0)
+  (`requests` is needed for API import — asked at approval or resume time)
 
   Or use the included `install_cdgc_deps.sh`:
   ```bash
   ~/.claude/commands/install_cdgc_deps.sh
   ```
+
+---
+
+## Overview of the workflow
+
+This skill supports two distinct usage patterns — demos and real engagements — that share the same steps but differ in how the review cycle works.
+
+### Single-session flow (demo / proof of concept)
+```
+Step 0 — Collect documents + client name + project name
+Step 1 — Parse documents and extract candidates
+Step 2 — Generate the Review Workbook
+Step 3 — Review inline → approve → choose import method (UI or API)
+Step 4 — Generate the 14 import files
+Step 5 — Import into CDGC
+```
+
+### Multi-session flow (real client engagement)
+```
+Session 1 (practitioner has source documents):
+  Step 0 — Collect documents + client name + project name
+  Step 1 — Parse documents
+  Step 2 — Generate the Review Workbook
+  Step 3 — Hand off workbook for client review → provide handoff guidance
+
+  [Client edits workbook offline — fills in owners, corrects terms,
+   resolves conflicts, clears TODO cells — may take days or weeks]
+
+Session 2 (workbook returned — any practitioner, any machine):
+  /cdgc-client-setup resume <path-to-edited-workbook>
+  → Validate workbook, report TODOs + broken parent links
+  → Choose import method (UI or API)
+  Step 4 — Generate the 14 import files from the edited workbook
+  Step 5 — Import into CDGC
+```
+
+All output files and folders use the naming convention `<ClientName>-<ProjectName>` (e.g., `AcmeHealth-DataGovernanceQ3`). The folder name is embedded in the workbook filename and recovered automatically on resume.
 
 ---
 
@@ -69,41 +106,6 @@ Three authentic, publicly available PDFs from the same organizational ecosystem:
 - `EnterpriseDataPlanning.pdf` — CMS Enterprise Data Planning → Domains, Systems, Data Sets
 
 These three documents produce 2 natural conflicts (USCDI clinical vocabulary vs OCR HIPAA legal vocabulary vs CMS operational terminology) — a perfect demo of the conflict detection capability. Keep them in `~/Downloads/CDGC_Demo_Docs/` and use with client name `ONC`, project name `HealthcareDemo`.
-
----
-
-## Overview of the workflow
-
-This skill supports two distinct usage patterns — demos and real engagements — that share the same steps but differ in how the review cycle works.
-
-### Single-session flow (demo / proof of concept)
-```
-Step 0 — Collect documents + client name + project name
-Step 1 — Parse documents and extract candidates
-Step 2 — Generate the Review Workbook
-Step 3 — Review inline, approve
-Step 4 — Generate the 14 import files
-Step 5 — Import (UI or API — asked at Step 3 approval)
-```
-
-### Multi-session flow (real client engagement)
-```
-Session 1:
-  Step 0 — Collect documents + client name + project name
-  Step 1 — Parse documents
-  Step 2 — Generate the Review Workbook
-  Step 3 — Hand off workbook to client for review (days / weeks)
-
-  [Client edits workbook offline — fills in owners, corrects terms,
-   resolves conflicts, clears TODO cells]
-
-Session 2 (new Claude Code session, same or different practitioner):
-  /cdgc-client-setup resume <path-to-edited-workbook>
-  Step 4 — Generate the 14 import files from the edited workbook
-  Step 5 — Import (UI or API — asked at resume time)
-```
-
-All output files and folders use the naming convention `<ClientName>-<ProjectName>` (e.g., `AcmeHealth-DataGovernanceQ3`). The folder name is embedded in the workbook filename and recovered automatically on resume.
 
 ---
 

@@ -20,46 +20,50 @@
 
 ---
 
-## Two modes of use
+## Workflow
 
-**Single-session (demo or proof of concept)**
+**Which path are you on?**
 
-Everything happens in one sitting. Parse documents → generate Review Workbook → review inline → approve → generate import files → import. The practitioner stays in Claude Code throughout.
-
-**Multi-session (real client engagement)**
-
-The workflow spans days or weeks. A practitioner runs the skill in Session 1 to produce the Review Workbook, then hands it to the client team (or a colleague) for review. The client fills in owners, corrects terms, resolves conflicts. When the workbook comes back, any practitioner — not necessarily the same person or machine — resumes with:
-
-```
-/cdgc-client-setup resume <path-to-edited-workbook>
-```
-
-Claude loads the edited workbook, validates it, and picks up at the import file generation step. No re-parsing of source documents is needed.
-
-**Which mode are you in?** If you have the original source documents in front of you and want to run end-to-end now, use `/cdgc-client-setup`. If you have a Review Workbook that has already been generated (and possibly edited), use `/cdgc-client-setup resume <path>`.
+- **Have source documents and want to run now?** → `/cdgc-client-setup`
+- **Have a Review Workbook already generated (or returned by the client)?** → `/cdgc-client-setup resume <path>`
 
 ---
 
-### End-to-end flow
+### Path A — Single-session (demo or proof of concept)
+
+Everything happens in one sitting. The practitioner stays in Claude Code throughout.
 
 ```
-1. You provide:  client documents (PDF, Excel, CSV, Word, text)
-                 client name + project name
-                 fallback preference (A/B/C)
+1. /cdgc-client-setup
+2. Provide: client name, project name, source documents, fallback preference (A/B/C)
+3. Claude parses documents → generates color-coded Review Workbook
+4. Review inline → Approve → choose import method (UI or API)
+5. Claude generates 14 import files
+6. Import into CDGC in order
+```
 
-2. Claude:       parses each document
-                 extracts governance assets with confidence scoring
-                 detects conflicts between documents
-                 generates a color-coded Review Workbook
+---
 
-3. You:          open the workbook, review flagged rows
-                 approve (single-session) OR hand off for client review (multi-session)
+### Path B — Multi-session (real client engagement)
 
-4. [Client/reviewer edits workbook offline — may take days]
+The review cycle happens outside Claude Code. The workbook is the handoff artifact.
 
-5. Claude:       on approval or resume, generates 14 import-ready Excel files
+```
+Session 1 — practitioner has source documents:
+  1. /cdgc-client-setup
+  2. Provide: client name, project name, source documents, fallback preference (A/B/C)
+  3. Claude parses documents → generates color-coded Review Workbook
+  4. Choose "Send for client review" → Claude provides handoff instructions
+  5. Share workbook with client team
 
-6. You:          import into CDGC in order, one file at a time
+  [Client fills in owners, corrects terms, resolves conflicts — days or weeks]
+
+Session 2 — workbook returned (any practitioner, any machine):
+  6. /cdgc-client-setup resume <path-to-edited-workbook>
+  7. Claude validates workbook → reports remaining TODOs + broken parent links
+  8. Choose import method (UI or API)
+  9. Claude generates 14 import files
+  10. Import into CDGC in order
 ```
 
 ### Output files
