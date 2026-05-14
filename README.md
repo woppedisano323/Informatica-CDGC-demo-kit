@@ -37,7 +37,7 @@ All skills live in `.claude/commands/` and are **auto-loaded** when you open thi
 
 ```bash
 # Clone the repo and open in Claude Code
-git clone https://github.com/woppedisano323/Informatica-CDGC-demo-kit.git
+git clone https://github.com/woppedisano323/Informatica-CDGC-kit.git
 cd Informatica-CDGC-demo-kit
 
 # Install Python dependencies (required for /cdgc-client-setup and API import)
