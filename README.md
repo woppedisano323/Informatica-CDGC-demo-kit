@@ -1,6 +1,6 @@
 # Informatica CDGC Kit
 
-Claude Code skills for building and importing Informatica CDGC demo environments — from synthetic vertical content or from the client's own documents.
+Claude Code skills for automating Informatica CDGC — build demo environments from synthetic vertical content, or load a client's actual governance content from their own documents.
 
 ---
 
