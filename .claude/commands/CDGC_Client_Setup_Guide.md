@@ -395,4 +395,4 @@ This deletes all governance assets in the correct dependency order (children bef
 
 ## Questions or Feedback
 
-Raise issues or suggestions in the `cdgc-demo-kit` repository.
+Raise issues or suggestions in the `Informatica-CDGC-kit` repository.

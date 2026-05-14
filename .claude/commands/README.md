@@ -1,4 +1,4 @@
-# Claude Code Custom Skills — CDGC Demo Kit
+# Claude Code Custom Skills — Informatica CDGC Kit
 
 This directory contains the Claude Code slash command skills for Informatica CDGC demos. Skills are auto-loaded when you open this repo in Claude Code — no manual install required.
 

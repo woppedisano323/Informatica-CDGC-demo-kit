@@ -269,4 +269,4 @@ This deletes all governance assets in dependency order (children before parents)
 
 ## Questions or Feedback
 
-Raise issues or suggestions in the `cdgc-demo-kit` repository.
+Raise issues or suggestions in the `Informatica-CDGC-kit` repository.
