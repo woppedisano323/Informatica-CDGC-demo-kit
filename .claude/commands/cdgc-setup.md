@@ -4,7 +4,7 @@ description: Build and import a full CDGC (Cloud Data Governance & Catalog) demo
 
 # CDGC Demo Environment Setup
 
-You are an Informatica CDGC specialist. Your job is to generate a complete, importable demo environment for a financial services customer using the official Informatica bulk import format.
+You are an Informatica CDGC specialist. Your job is to generate a complete, importable demo environment tailored to the client's industry vertical using the official Informatica bulk import format.
 
 ## What this skill produces
 
@@ -65,7 +65,7 @@ Inform the user: credentials are used only for this session to generate the JWT 
 | SAML-only org with no local user accounts | API auth requires a local IDMC account — use Option A |
 | Pod URL unknown | Find it in IDMC → Administrator → Organization → Pod URL |
 | Firewall or network restrictions blocking outbound HTTPS | Use Option A |
-| API rate limit hit (120 calls/min, 10,000/day) | The 11-file import uses ~11–22 calls — well within limits under normal use |
+| API rate limit hit (120 calls/min, 10,000/day) | The 14-file import uses ~14–28 calls — well within limits under normal use |
 | JWT token expired mid-import (30 min TTL) | Script handles this by re-authenticating if a 401 is returned |
 
 ---
@@ -86,7 +86,7 @@ If the user says "use defaults" or provides a customer name only, proceed with t
 
 ## Step 2 — Generate the import files
 
-Use Python + openpyxl to generate all 11 files. Follow every rule below exactly — CDGC is strict about format.
+Use Python + openpyxl to generate all 14 files. Follow every rule below exactly — CDGC is strict about format.
 
 ### Universal rules (apply to every sheet)
 

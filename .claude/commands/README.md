@@ -17,6 +17,8 @@ This directory contains the Claude Code slash command skills for Informatica CDG
 - No client documents, or running a quick vertical demo → `/cdgc-setup`
 - Need to clear a demo org before reloading → `/cdgc-wipe`
 
+**Full guides:** `CDGC_Demo_Setup_Guide.md` (for `/cdgc-setup`) and `CDGC_Client_Setup_Guide.md` (for `/cdgc-client-setup`)
+
 ---
 
 ## `/cdgc-setup`
@@ -49,6 +51,8 @@ Claude will ask for: customer name, industry vertical, regulatory concerns, prim
 | 14 | `14_Relationships.xlsx` | Cross-asset relationships |
 
 **Import order:** `01 → 02 → 03 → ... → 14` — always in sequence, one file at a time, wait for COMPLETED before uploading the next.
+
+**Full guide:** See `CDGC_Demo_Setup_Guide.md` in this directory.
 
 ---
 
