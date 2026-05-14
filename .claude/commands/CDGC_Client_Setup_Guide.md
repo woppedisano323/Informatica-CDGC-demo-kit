@@ -7,6 +7,8 @@
 | `cdgc-client-setup.md` | The Claude Code skill — install once, use on any engagement |
 | `cdgc-wipe.md` | Wipe skill — clean a CDGC org before reloading |
 | `cdgc-setup.md` | Vertical demo builder — no client documents required |
+| `cdgc_api_import.py` | Standalone API import script — authenticate, import 14 files in order, poll for completion, verify counts. Validated end-to-end 2026-05-12. |
+| `cdgc_discover_classtypes.py` | Diagnostic utility — query the CDGC API to list asset counts and externalIds by type. Use before/after import to verify org state. |
 | `install_cdgc_deps.sh` | Python dependency installer — run once per machine |
 | `CDGC_Client_Setup_Guide.md` | This guide |
 
@@ -15,6 +17,28 @@
 ## What the Skill Does
 
 `/cdgc-client-setup` builds a complete, client-specific CDGC import package from documents the client already has. Instead of generating fictional content, it reads their actual data dictionaries, policy documents, org charts, and glossaries — then maps that content to the CDGC governance model automatically.
+
+---
+
+## Two modes of use
+
+**Single-session (demo or proof of concept)**
+
+Everything happens in one sitting. Parse documents → generate Review Workbook → review inline → approve → generate import files → import. The practitioner stays in Claude Code throughout.
+
+**Multi-session (real client engagement)**
+
+The workflow spans days or weeks. A practitioner runs the skill in Session 1 to produce the Review Workbook, then hands it to the client team (or a colleague) for review. The client fills in owners, corrects terms, resolves conflicts. When the workbook comes back, any practitioner — not necessarily the same person or machine — resumes with:
+
+```
+/cdgc-client-setup resume <path-to-edited-workbook>
+```
+
+Claude loads the edited workbook, validates it, and picks up at the import file generation step. No re-parsing of source documents is needed.
+
+**Which mode are you in?** If you have the original source documents in front of you and want to run end-to-end now, use `/cdgc-client-setup`. If you have a Review Workbook that has already been generated (and possibly edited), use `/cdgc-client-setup resume <path>`.
+
+---
 
 ### End-to-end flow
 
@@ -28,11 +52,14 @@
                  detects conflicts between documents
                  generates a color-coded Review Workbook
 
-3. You:          open the workbook, review flagged rows, approve or edit
+3. You:          open the workbook, review flagged rows
+                 approve (single-session) OR hand off for client review (multi-session)
 
-4. Claude:       generates 14 import-ready Excel files
+4. [Client/reviewer edits workbook offline — may take days]
 
-5. You:          import into CDGC in order, one file at a time
+5. Claude:       on approval or resume, generates 14 import-ready Excel files
+
+6. You:          import into CDGC in order, one file at a time
 ```
 
 ### Output files
@@ -75,8 +102,10 @@
 - **Python 3.8 or later** (`python3 --version` to check)
 - Required Python packages:
   ```bash
-  pip install openpyxl pdfplumber python-docx
+  pip install openpyxl pdfplumber python-docx requests
   ```
+  (`requests` is required for API import — Option B at approval time)
+
   Or run the included installer (see Installation below).
 
 ---
@@ -89,6 +118,8 @@
 cp cdgc-client-setup.md ~/.claude/commands/
 cp cdgc-setup.md ~/.claude/commands/
 cp cdgc-wipe.md ~/.claude/commands/
+cp cdgc_api_import.py ~/.claude/commands/
+cp cdgc_discover_classtypes.py ~/.claude/commands/
 cp install_cdgc_deps.sh ~/.claude/commands/
 cp CDGC_Client_Setup_Guide.md ~/.claude/commands/
 ```
@@ -117,14 +148,34 @@ Open Claude Code and type `/cdgc` — you should see:
 
 ## Using the Skill — Step by Step
 
-### 1. Start the session
+### Starting from source documents
+
 Type `/cdgc-client-setup` and press Enter. Claude will ask for:
 - **Client name** — the organization you are working with (e.g., `Acme Health`)
 - **Project name** — the engagement or workstream name (e.g., `DataGovernanceQ3`)
 - **File paths** — one per line (see "What documents work well" below)
 - **Fallback preference** — what to do when a field can't be inferred
 
-### 2. Review the workbook
+Import method is **not** asked at this point — it's asked later, only when you are ready to generate import files.
+
+### Starting from an edited workbook (resume flow)
+
+If the Review Workbook was generated in a previous session or returned by the client after review, skip document parsing and load directly:
+
+```
+/cdgc-client-setup resume ~/Downloads/CDGC_Import_AcmeHealth-DataGovernanceQ3/00_Review_AcmeHealth-DataGovernanceQ3.xlsx
+```
+
+Claude will:
+1. Parse the client and project name from the filename
+2. Validate all sheets, columns, and parent references
+3. Report remaining TODOs and any broken parent links
+4. Ask which import method you want (A or B), then generate the 14 files
+
+This is the expected entry point for real engagements where the review cycle happened outside of Claude Code.
+
+### Reviewing the workbook
+
 Claude generates `00_Review_<ClientName>-<ProjectName>.xlsx` in `~/Downloads/CDGC_Import_<ClientName>-<ProjectName>/`. Open it and review:
 
 | Row color | Meaning | Action needed |
@@ -135,14 +186,34 @@ Claude generates `00_Review_<ClientName>-<ProjectName>.xlsx` in `~/Downloads/CDG
 | Red | TODO — could not be determined | Fill in manually before approving |
 | Red (⚠ Conflicts sheet) | Naming conflict between two documents | Resolve before approving |
 
-### 3. Approve and generate import files
-When ready: tell Claude "Approve" or select option 1. Claude generates all 14 import files in the same folder.
+### What the reviewer can and cannot edit
+
+**Safe to edit:**
+- Description, Alias Names, Business Logic, Examples
+- Stakeholder: Governance Owner, Stakeholder: Governance Administrator *(use email addresses of actual CDGC org users)*
+- Lifecycle *(valid values: Draft, In Review, Published, Obsolete)*
+- Any red TODO cell — these must be filled before import
+- Any yellow or orange cell — correct if the extracted value is wrong
+
+**Do not edit:**
+- Reference ID — if already populated, do not change
+- Name — changing a name breaks parent references in other sheets
+- Parent: Domain / Parent: Subdomain / Parent: System — must exactly match the Name of an asset in the corresponding sheet
+- Confidence, Review Notes columns — stripped on import; editing has no effect but do not delete them
+- Sheet names — do not rename, add, or remove sheets
+
+### Approving and generating import files
+
+Tell Claude "Approve" or select option 1. Claude will then ask for import method (A or B) and generate all 14 files.
 
 **Alternatively:**
-- **Edit offline** — make changes to the workbook, resume with `/cdgc-client-setup resume <path>`
-- **Request changes inline** — tell Claude what to update in plain language ("Change the owner for all Business Terms to sarah@acme.com")
+- **Send for client review** — select option 2; Claude provides handoff guidance including the safe/do-not-edit instructions to pass along
+- **Request inline changes** — tell Claude what to update in plain language ("Change the owner for all Business Terms to sarah@acme.com")
 
-### 4. Import into CDGC
+### Importing into CDGC
+
+#### Option A — Manual UI
+
 **CDGC UI → Gear icon → Import → Upload → Auto-map → Import**
 
 Import in order, one file at a time. Wait for **COMPLETED** status before uploading the next file.
@@ -163,6 +234,37 @@ Import in order, one file at a time. Wait for **COMPLETED** status before upload
 13_DQ_Rule_Template.xlsx    ← depends on Business Terms
 14_Relationships.xlsx       ← import last
 ```
+
+#### Option B — API (automated)
+
+If you selected API import in Step 1, Claude generates and runs the import script automatically — no manual steps required. It authenticates, uploads each file, polls for COMPLETED status, and prints a verification scan when done.
+
+To run the standalone script outside of the skill:
+```bash
+pip install requests
+python3 ~/.claude/commands/cdgc_api_import.py
+```
+
+Edit `IMPORT_DIR` at the top of the script to match your engagement folder (e.g., `CDGC_Import_AcmeHealth-DataGovernanceQ3`). Change `LOGIN_URL` / `ORG_URL` if your org is on a pod other than `dmp-us`.
+
+| Known issue | Resolution |
+|------------|-----------|
+| No Import privilege | Ask org admin to grant it, or use Option A |
+| SAML-only org | API auth requires a local IDMC account — use Option A |
+| Pod URL unknown | IDMC → Administrator → Organization → Pod URL |
+| AI Systems / AI Models show ⚠ 0 in verification scan | classType search is broken on suborg for those two types — verify counts in the CDGC UI directly |
+
+---
+
+## Diagnostic Utility — `cdgc_discover_classtypes.py`
+
+Use this script to inspect what's in a CDGC org before or after import — useful for validating a clean slate before a demo reload or confirming asset counts after import.
+
+```bash
+python3 ~/.claude/commands/cdgc_discover_classtypes.py
+```
+
+It prompts for credentials, then prints a table of asset counts and externalIds for all 13 governance asset types.
 
 ---
 
