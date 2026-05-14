@@ -1,4 +1,4 @@
-# Informatica CDGC Demo Kit
+# Informatica CDGC Kit
 
 Claude Code skills for building and importing Informatica CDGC demo environments — from synthetic vertical content or from the client's own documents.
 
@@ -38,7 +38,7 @@ All skills live in `.claude/commands/` and are **auto-loaded** when you open thi
 ```bash
 # Clone the repo and open in Claude Code
 git clone https://github.com/woppedisano323/Informatica-CDGC-kit.git
-cd Informatica-CDGC-demo-kit
+cd Informatica-CDGC-kit
 
 # Install Python dependencies (required for /cdgc-client-setup and API import)
 pip install openpyxl pdfplumber python-docx requests
